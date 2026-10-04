@@ -1,0 +1,8 @@
+name = "marlene-et-moi"
+compatibility_date = "2026-10-04"
+
+[build]
+command = "rm -rf site && mkdir -p site && unzip -o Marlene-et-moi-GitHub-Cloudflare.zip -d site"
+
+[assets]
+directory = "./site/public"
