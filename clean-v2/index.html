@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Marlène et moi">
   <title>Marlène et moi</title>
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body>
 <div class="app" id="app">
@@ -71,6 +71,18 @@
     <button class="modal-back" data-close="orderModal">←</button>
     <h2>Ma commande</h2>
     <div id="orderPreview" class="order-preview"></div>
+    <div class="gift-choice" id="giftChoice">
+      <div class="gift-title">🎁 C'est un cadeau ?</div>
+      <div class="gift-buttons">
+        <button type="button" id="giftNo" class="active">Non</button>
+        <button type="button" id="giftYes">Oui, c'est un cadeau</button>
+      </div>
+      <div id="giftOptions" class="gift-options hidden">
+        <input id="giftFor" placeholder="Prénom de la personne">
+        <textarea id="giftMessage" placeholder="Petit message à mettre avec le cadeau"></textarea>
+        <label class="gift-check"><input type="checkbox" id="hidePriceGift"> Ne pas mettre le prix dans le colis</label>
+      </div>
+    </div>
     <div class="form-grid">
       <input id="buyerFirst" autocomplete="given-name" placeholder="Prénom">
       <input id="buyerLast" autocomplete="family-name" placeholder="Nom">
@@ -175,6 +187,6 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<script src="app.js?v=5"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>
