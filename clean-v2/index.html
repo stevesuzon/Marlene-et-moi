@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Marlène et moi">
   <title>Marlène et moi</title>
-  <link rel="stylesheet" href="styles.css?v=2">
+  <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
 <div class="app" id="app">
@@ -20,7 +20,7 @@
       <button class="icon-btn" id="adminBtn" aria-label="Administration">🔒</button>
       <button class="icon-btn hidden" id="backBtn" aria-label="Retour">←</button>
     </div>
-    <button class="collection-update" id="collectionUpdateBtn">↻ Mise à jour nouvelle collection</button>
+    <button class="collection-update" id="collectionUpdateBtn">Charger la nouvelle collection</button>
     <button class="cart-main" id="cartBtn" aria-label="Panier">🛒 <span>Panier</span><b id="cartBadge">0</b></button>
   </header>
 
@@ -153,7 +153,18 @@
   </div>
 </div>
 
+<div class="new-item-modal" id="newItemModal" aria-hidden="true">
+  <div class="new-item-card">
+    <div class="new-item-badge">✨ Nouvelle collection</div>
+    <img id="newItemImage" alt="">
+    <h2 id="newItemName"></h2>
+    <p id="newItemInfo"></p>
+    <button class="primary new-item-see" id="newItemSee">Voir l’article</button>
+    <button class="secondary new-item-close" id="newItemClose">Fermer</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
-<script src="app.js?v=2"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>
