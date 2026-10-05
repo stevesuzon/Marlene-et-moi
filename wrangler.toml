@@ -3,7 +3,7 @@ compatibility_date = "2026-10-04"
 main = "./src/index.js"
 
 [build]
-command = "rm -rf site && mkdir -p site && unzip -o Marlene-et-moi-GitHub-Cloudflare.zip -d site && cp public/index.html site/public/index.html && cp public/sw.js site/public/sw.js"
+command = "rm -rf site && mkdir -p site && unzip -o Marlene-et-moi-GitHub-Cloudflare.zip -d site && node patch-v20.js"
 
 [assets]
 directory = "./site/public"
