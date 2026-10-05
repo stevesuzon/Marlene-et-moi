@@ -1,5 +1,66 @@
-const CACHE='marlene-clean-v3';
-const CORE=['./','index.html','styles.css?v=3','app.js?v=3','manifest.webmanifest','banner-marlene-et-moi.png','icon-192.png','icon-512.png','apple-touch-icon.png','scarf-1.jpg','scarf-2.jpg','scarf-3.jpg','scarf-4.jpg'];
-self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).catch(()=>{}));self.skipWaiting()});
-self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim()});
-self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;const u=new URL(e.request.url);if(u.origin!==location.origin)return;if(e.request.mode==='navigate'){e.respondWith(fetch(e.request,{cache:'no-store'}).catch(()=>caches.match('index.html')));return}e.respondWith(fetch(e.request).then(r=>{const c=r.clone();caches.open(CACHE).then(x=>x.put(e.request,c));return r}).catch(()=>caches.match(e.request)))});
+const CACHE='marlene-clean-v8';
+const CORE=[
+  './',
+  'index.html',
+  'styles.css?v=8',
+  'app.js?v=8',
+  'manifest.webmanifest',
+  'banner-marlene-et-moi.png',
+  'pelote-multicolore.png',
+  'icon-192.png',
+  'icon-512.png',
+  'apple-touch-icon.png',
+  'scarf-1.jpg',
+  'scarf-2.jpg',
+  'scarf-3.jpg',
+  'scarf-4.jpg'
+];
+
+async function rebuildCache(){
+  const keys=await caches.keys();
+  await Promise.all(keys.filter(k=>k.startsWith('marlene-')).map(k=>caches.delete(k)));
+  const cache=await caches.open(CACHE);
+  await cache.addAll(CORE).catch(()=>{});
+}
+
+self.addEventListener('install',event=>{
+  event.waitUntil(rebuildCache());
+  self.skipWaiting();
+});
+
+self.addEventListener('activate',event=>{
+  event.waitUntil((async()=>{
+    const keys=await caches.keys();
+    await Promise.all(keys.filter(k=>k!==CACHE && k.startsWith('marlene-')).map(k=>caches.delete(k)));
+    await self.clients.claim();
+  })());
+});
+
+self.addEventListener('fetch',event=>{
+  if(event.request.method!=='GET')return;
+  const url=new URL(event.request.url);
+  if(url.origin!==location.origin)return;
+
+  if(event.request.mode==='navigate'){
+    event.respondWith(
+      fetch(event.request,{cache:'no-store'})
+        .then(async response=>{
+          const cache=await caches.open(CACHE);
+          cache.put('index.html',response.clone()).catch(()=>{});
+          return response;
+        })
+        .catch(()=>caches.match('index.html'))
+    );
+    return;
+  }
+
+  event.respondWith(
+    fetch(event.request,{cache:'no-store'})
+      .then(async response=>{
+        const cache=await caches.open(CACHE);
+        cache.put(event.request,response.clone()).catch(()=>{});
+        return response;
+      })
+      .catch(()=>caches.match(event.request))
+  );
+});
