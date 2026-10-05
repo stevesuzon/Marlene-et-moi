@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#405f50">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ma laine et moi">
+<title>Ma laine et moi</title>
+<link rel="stylesheet" href="styles.css?v=200">
+</head>
+<body>
+<div class="app">
+  <header class="hero">
+    <img class="hero-bg" src="banner-marlene-et-moi.png" alt="">
+    <div class="hero-brand" aria-label="Ma laine et moi">
+      <div class="hero-brand-title">Ma laine et moi</div>
+      <div class="hero-brand-sub">ÉCHARPES · LAINE · HIVER · DOUCEUR</div>
+    </div>
+    <button id="adminBtn" class="icon-btn">🔒</button>
+    <button id="collectionBtn" class="collection-btn">Charger la nouvelle collection</button>
+  </header>
+
+  <nav class="categories">
+    <button class="cat active" data-cat="echarpes">🧣 Écharpes</button>
+    <button class="cat" data-cat="vestes">🧥 Vestes</button>
+    <button class="cat" data-cat="bracelets">💎 Bracelets</button>
+  </nav>
+
+  <section class="color-zone">
+    <div class="label">Couleur</div>
+    <div id="colorFilters" class="color-filters"></div>
+  </section>
+
+  <div class="quick-actions">
+    <button id="trackingBtn" class="soft hidden">📦 Suivi de ma commande</button>
+    <button id="cartBtn" class="cart-btn">🛒 Panier <b id="cartBadge">0</b></button>
+  </div>
+
+  <main class="content">
+    <div class="section-head"><h1 id="sectionTitle">Écharpes</h1><button id="addBtn" class="admin-add hidden">+ Ajouter</button></div>
+    <div id="grid" class="grid"></div>
+    <div class="pager"><button id="prev">←</button><span id="pageLabel">Page 1 / 1</span><button id="next">→</button></div>
+  </main>
+</div>
+
+<section id="cartScreen" class="screen">
+  <div class="screen-head"><button data-back="cartScreen">←</button><h2>Mon panier</h2></div>
+  <div id="cartList" class="stack-list"></div>
+  <div class="summary">
+    <div><span>Sous-total</span><b id="subtotal">0 €</b></div>
+    <div><span>Livraison</span><b id="shipping">10 €</b></div>
+    <div class="total"><span>Total</span><b id="total">0 €</b></div>
+    <div class="delivery"><button id="shipBtn" class="active">Envoyer</button><button id="pickupBtn">À venir chercher</button></div>
+    <div id="pickupBox" class="hidden">
+    <div class="market-entry">
+      <input id="marketSearch" placeholder="Écris le marché ou la ville">
+      <button id="marketOk" type="button">OK</button>
+    </div>
+    <small class="market-help">Si je reconnais le marché, je te le propose. Sinon appuie sur OK pour garder ce que tu as écrit.</small>
+    <div id="marketResults"></div>
+    <b id="marketSelected"></b>
+  </div>
+    <button id="applePayBtn" class="apple-pay" disabled><span> Pay</span><small>Bientôt disponible</small></button>
+    <button id="checkoutBtn" class="primary">Commander</button>
+  </div>
+</section>
+
+<section id="trackingScreen" class="screen">
+  <div class="screen-head"><button data-back="trackingScreen">←</button><h2>Suivi de ma commande</h2></div>
+  <div id="trackingContent" class="tracking"></div><div id="clientMessages" class="client-messages"></div>
+</section>
+
+<section id="ordersScreen" class="screen">
+  <div class="screen-head"><button data-back="ordersScreen">←</button><h2>Commandes</h2></div>
+  <div class="tabs"><button class="active" data-tab="active">À préparer</button><button data-tab="ready">À envoyer</button><button data-tab="sent">Envoyées</button></div>
+  <div id="ordersList" class="stack-list"></div>
+</section>
+
+<div id="viewer" class="viewer">
+  <button data-close="viewer" class="viewer-back">←</button>
+  <img id="viewerImg" alt="">
+  <div class="viewer-nav"><button id="viewerPrev">‹</button><span id="viewerCount"></span><button id="viewerNext">›</button></div>
+  <strong id="viewerName"></strong><span id="viewerInfo"></span>
+</div>
+
+<div id="orderModal" class="modal">
+  <div class="modal-card">
+    <button data-close="orderModal" class="back">←</button>
+    <h2>Ma commande</h2>
+    <div id="orderPreview" class="order-preview"></div>
+    <div class="gift-box">
+      <b>🎁 C'est un cadeau ?</b>
+      <div class="choice"><button id="giftNo" class="active">Non</button><button id="giftYes">Oui, c'est un cadeau</button></div>
+      <div id="giftOptions" class="hidden">
+        <input id="giftFor" placeholder="Prénom de la personne">
+        <textarea id="giftMessage" placeholder="Petit message à mettre avec le cadeau"></textarea>
+        <label><input id="hidePrice" type="checkbox"> Ne pas mettre le prix dans le colis</label>
+      </div>
+    </div>
+    <div class="form-grid">
+      <input id="first" placeholder="Prénom" autocomplete="given-name">
+      <input id="last" placeholder="Nom" autocomplete="family-name">
+      <input id="email" placeholder="E-mail" type="email" autocomplete="email">
+      <input id="phone" placeholder="Téléphone" type="tel" autocomplete="tel">
+      <input id="address" placeholder="Adresse" autocomplete="street-address">
+      <input id="postal" placeholder="Code postal" inputmode="numeric" autocomplete="postal-code">
+      <input id="city" placeholder="Ville" autocomplete="address-level2">
+    </div>
+    <button id="submitOrder" class="primary">Valider la commande</button>
+  </div>
+</div>
+
+<div id="adminModal" class="modal">
+  <div class="modal-card">
+    <button data-close="adminModal" class="back">←</button>
+    <h2>Administration</h2>
+    <div id="adminSetup" class="admin-pane hidden">
+      <input id="johnCode" type="password" placeholder="Créer le code John">
+      <input id="marleneCode" type="password" placeholder="Créer le code Marlène">
+      <button id="setupAdmin" class="primary">Créer les accès</button>
+    </div>
+    <div id="adminLogin" class="admin-pane hidden">
+      <div class="choice"><button class="admin-who active" data-admin="John">John</button><button class="admin-who" data-admin="Marlène">Marlène</button></div>
+      <input id="adminCode" type="password" placeholder="Code administrateur">
+      <button id="loginAdmin" class="primary">Connexion</button>
+    </div>
+    <div id="adminHome" class="admin-pane hidden">
+      <p>Connecté : <b id="adminName"></b></p>
+      <button id="ordersBtn" class="primary">📦 Commandes</button>
+      <button id="changeCodeBtn" class="secondary">Changer mon code</button>
+      <button id="logoutBtn" class="danger">Déconnexion</button>
+    </div>
+  </div>
+</div>
+
+<div id="changeCodeModal" class="modal">
+  <div class="modal-card">
+    <button data-close="changeCodeModal" class="back">←</button>
+    <h2>Changer mon code</h2>
+    <input id="oldCode" type="password" placeholder="Code actuel">
+    <input id="newCode" type="password" placeholder="Nouveau code">
+    <input id="newCode2" type="password" placeholder="Confirmer le nouveau code">
+    <button id="saveCode" class="primary">Changer mon code</button>
+  </div>
+</div>
+
+<div id="productModal" class="modal">
+  <div class="modal-card">
+    <button data-close="productModal" class="back">←</button>
+    <h2 id="productTitle">Ajouter un article</h2>
+    <input id="productName" placeholder="Nom">
+    <input id="productInfo" placeholder="Description">
+    <input id="productPrice" placeholder="Prix ex : 39 €">
+    <label>Couleur principale<select id="productFamily"></select></label>
+    <label>Nuance<select id="productShade"></select></label>
+    <label>Photo 1<input id="photo1" type="file" accept="image/*"></label>
+    <label>Photo 2<input id="photo2" type="file" accept="image/*"></label>
+    <label>Photo 3<input id="photo3" type="file" accept="image/*"></label>
+    <button id="saveProduct" class="primary">Enregistrer</button>
+  </div>
+</div>
+
+<div id="newItemModal" class="modal center-modal">
+  <div class="modal-card new-card">
+    <div class="badge">✨ Nouvelle collection</div>
+    <img id="newItemImg" alt="">
+    <h2 id="newItemName"></h2>
+    <p id="newItemInfo"></p>
+    <button id="newItemSee" class="primary">Voir l’article</button>
+    <button data-close="newItemModal" class="secondary">Fermer</button>
+  </div>
+</div>
+
+<div id="loader" class="loader">
+  <div class="loader-card">
+    <img src="pelote-multicolore.png" alt="">
+    <div class="loader-brand">Ma laine et moi</div>
+    <div class="loader-yarn-line"></div>
+    <span>Chargement de la collection…</span>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+<script src="app.js?v=200"></script>
+</body>
+</html>
