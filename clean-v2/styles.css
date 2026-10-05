@@ -257,3 +257,34 @@ button,input{font:inherit}.hero{position:relative;background:#e9eeeb}.hero>img{d
 #buyerAddress{grid-column:1/-1}
 #buyerPostal,#buyerCity{min-width:0}
 .order-customer{line-height:1.45}
+
+/* CLEAN v8 — bouton Apple Pay visuel en attente de Stripe */
+.apple-pay-btn{
+  width:100%;
+  margin-top:12px;
+  min-height:54px;
+  border:0;
+  border-radius:12px;
+  background:#000;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  font-size:24px;
+  font-weight:800;
+  letter-spacing:-.02em;
+  opacity:.58;
+  position:relative;
+}
+.apple-pay-btn .apple-logo{font-size:28px;line-height:1}
+.apple-pay-btn small{
+  position:absolute;
+  right:10px;
+  bottom:4px;
+  font-size:9px;
+  font-weight:700;
+  opacity:.72;
+  letter-spacing:0;
+}
+.apple-pay-btn:disabled{cursor:not-allowed}
