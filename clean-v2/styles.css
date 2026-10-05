@@ -169,3 +169,11 @@ button,input{font:inherit}.hero{position:relative;background:#e9eeeb}.hero>img{d
     font-size:16px!important;
   }
 }
+
+/* CLEAN v4.1 — descendre légèrement le bouton collection */
+.collection-update{
+  top:24px!important;
+}
+@media(max-width:620px){
+  .collection-update{top:22px!important}
+}
