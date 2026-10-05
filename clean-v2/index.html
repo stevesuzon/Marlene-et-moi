@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Marlène et moi">
   <title>Marlène et moi</title>
-  <link rel="stylesheet" href="styles.css?v=4">
+  <link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
 <div class="app" id="app">
@@ -28,6 +28,10 @@
     <button class="category" data-cat="vestes">🧥 Vestes</button>
     <button class="category" data-cat="bracelets">💎 Bracelets</button>
   </nav>
+  <div class="color-filters-wrap">
+    <div class="color-filters-title">Couleur</div>
+    <div class="color-filters" id="colorFilters"></div>
+  </div>
   <div class="cart-below-categories"><button class="cart-main" id="cartBtn" aria-label="Panier">🛒 <span>Panier</span><b id="cartBadge">0</b></button></div>
 
   <main class="content">
@@ -121,6 +125,12 @@
       <input id="productName" placeholder="Nom">
       <input id="productInfo" placeholder="Description">
       <input id="productPrice" placeholder="Prix ex : 39 €">
+      <label class="color-admin-label">Couleur principale
+        <select id="productColorFamily"></select>
+      </label>
+      <label class="color-admin-label">Nuance
+        <select id="productColorShade"></select>
+      </label>
       <div class="photo-inputs">
         <label>Photo 1<input id="photo1" type="file" accept="image/*"></label>
         <label>Photo 2<input id="photo2" type="file" accept="image/*"></label>
@@ -165,6 +175,6 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<script src="app.js?v=3"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>
