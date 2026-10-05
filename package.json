@@ -1,7 +1,7 @@
 {
   "name": "marlene-et-moi-deploy",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.20",
   "devDependencies": {
     "wrangler": "^4.0.0"
   }
