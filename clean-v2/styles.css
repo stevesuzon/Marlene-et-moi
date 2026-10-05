@@ -193,3 +193,24 @@ button,input{font:inherit}.hero{position:relative;background:#e9eeeb}.hero>img{d
   .collection-update{top:7px!important}
   .top-left{top:7px!important}
 }
+
+/* CLEAN v5 — filtre couleurs et nuances */
+.color-filters-wrap{padding:2px 12px 8px}
+.color-filters-title{font-size:13px;font-weight:850;color:var(--muted);margin:0 0 6px 2px}
+.color-filters{display:flex;gap:9px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none}
+.color-filters::-webkit-scrollbar{display:none}
+.color-chip{
+  flex:0 0 auto;display:flex;align-items:center;gap:7px;
+  border:1px solid #d8d1c7;background:#fffdf9;border-radius:999px;
+  padding:8px 11px;font-weight:800;color:var(--ink);white-space:nowrap
+}
+.color-chip.active{background:var(--green);color:#fff;border-color:var(--green)}
+.color-dot{width:18px;height:18px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #0003;display:inline-block}
+.color-admin-label{display:grid;gap:6px;font-weight:800;color:var(--ink)}
+.color-admin-label select{width:100%;padding:12px;border:1px solid var(--line);border-radius:9px;background:#fff;font:inherit}
+.product-color-line{display:flex;align-items:center;gap:7px;margin:0 0 9px;color:var(--muted);font-size:14px}
+.product-color-line .color-dot{width:16px;height:16px}
+@media(max-width:620px){
+ .color-filters-wrap{padding-left:10px;padding-right:10px}
+ .color-chip{padding:7px 10px;font-size:14px}
+}
