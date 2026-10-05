@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Marlène et moi">
 <title>Marlène et moi</title>
-<link rel="stylesheet" href="styles.css?v=102">
+<link rel="stylesheet" href="styles.css?v=103">
 </head>
 <body>
 <div class="app">
@@ -50,7 +50,15 @@
     <div><span>Livraison</span><b id="shipping">10 €</b></div>
     <div class="total"><span>Total</span><b id="total">0 €</b></div>
     <div class="delivery"><button id="shipBtn" class="active">Envoyer</button><button id="pickupBtn">À venir chercher</button></div>
-    <div id="pickupBox" class="hidden"><input id="marketSearch" placeholder="Marché ou ville"><div id="marketResults"></div><b id="marketSelected"></b></div>
+    <div id="pickupBox" class="hidden">
+    <div class="market-entry">
+      <input id="marketSearch" placeholder="Écris le marché ou la ville">
+      <button id="marketOk" type="button">OK</button>
+    </div>
+    <small class="market-help">Si je reconnais le marché, je te le propose. Sinon appuie sur OK pour garder ce que tu as écrit.</small>
+    <div id="marketResults"></div>
+    <b id="marketSelected"></b>
+  </div>
     <button id="applePayBtn" class="apple-pay" disabled><span> Pay</span><small>Bientôt disponible</small></button>
     <button id="checkoutBtn" class="primary">Commander</button>
   </div>
@@ -171,6 +179,6 @@
   </div>
 </div>
 <div id="toast" class="toast"></div>
-<script src="app.js?v=102"></script>
+<script src="app.js?v=103"></script>
 </body>
 </html>
