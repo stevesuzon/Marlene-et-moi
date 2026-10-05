@@ -1,11 +1,29 @@
 (()=>{
 'use strict';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-const STORAGE='marlene-clean-products-v1', CART='marlene-clean-cart-v1', ADMINS='marlene-clean-admins-v1', ADMIN_SESSION='marlene-clean-admin-session-v1', ADMIN_NAME='marlene-clean-admin-name-v1', KNOWN_PRODUCTS='marlene-known-products-v3', PENDING_NEW='marlene-pending-new-v3';
+const STORAGE='marlene-clean-products-v1', CART='marlene-clean-cart-v1', ADMINS='marlene-clean-admins-v1', ADMIN_SESSION='marlene-clean-admin-session-v1', ADMIN_NAME='marlene-clean-admin-name-v1', ADMIN_TOKEN='marlene-admin-token-v1', CUSTOMER_TRACKING='marlene-customer-tracking-v1', KNOWN_PRODUCTS='marlene-known-products-v3', PENDING_NEW='marlene-pending-new-v3';
 const safeGet=k=>{try{return localStorage.getItem(k)}catch{return null}}, safeSet=(k,v)=>{try{localStorage.setItem(k,v);return true}catch{return false}};
 const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1500)};
 const euro=v=>{const n=parseFloat(String(v).replace(/[^0-9,.-]/g,'').replace(',','.'));return Number.isFinite(n)?n:0};
 const money=v=>v.toLocaleString('fr-FR',{maximumFractionDigits:2})+' €';
+async function api(path,options={}){
+  const headers={'content-type':'application/json',...(options.headers||{})};
+  if(adminToken)headers.authorization='Bearer '+adminToken;
+  const r=await fetch(path,{...options,headers});
+  let data={};try{data=await r.json()}catch{}
+  if(!r.ok)throw new Error(data.error||'Erreur');
+  return data;
+}
+function trackingSaved(){try{return JSON.parse(safeGet(CUSTOMER_TRACKING)||'null')}catch{return null}}
+function updateTrackingButton(){const b=$('#trackingBtn');if(b)b.classList.toggle('hidden',!trackingSaved())}
+function statusLabel(s){return s==='paid'?'Payée':s==='in_progress'?'En préparation':s==='done'?'Colis terminé':s==='sent'?'Envoyé':'Commande reçue'}
+function orderSteps(){
+  return [{id:'paid',label:'Commande payée',note:'Paiement confirmé'},
+          {id:'in_progress',label:'En préparation',note:'Votre commande est en préparation'},
+          {id:'done',label:'Colis terminé',note:'Le colis est prêt à partir'},
+          {id:'sent',label:'Envoyé',note:'Votre colis a été envoyé'}];
+}
+
 const loader=$('#yarnLoader'), loaderNote=$('#yarnLoaderNote');
 let loaderTimer=null, loaderBusy=false;
 function showYarnLoader(note='Chargement…'){
@@ -66,7 +84,7 @@ let products;try{products=JSON.parse(safeGet(STORAGE)||'null')||structuredClone(
 let cart;try{cart=JSON.parse(safeGet(CART)||'[]')||[]}catch{cart=[]}
 let current='echarpes',page=1,viewerItem=null,viewerIndex=0,delivery='ship',selectedMarket='',selectedAdmin='John',editing=null;
 let admins;try{admins=JSON.parse(safeGet(ADMINS)||'null')}catch{admins=null}
-let admin=safeGet(ADMIN_SESSION)==='1',adminName=safeGet(ADMIN_NAME)||'';
+let admin=safeGet(ADMIN_SESSION)==='1',adminName=safeGet(ADMIN_NAME)||'',adminToken=safeGet(ADMIN_TOKEN)||'',orderTab='active';
 const labels={echarpes:'Écharpes',vestes:'Vestes',bracelets:'Bracelets'};
 
 const COLOR_FAMILIES=[
@@ -239,6 +257,41 @@ function renderViewer(){if(!viewerItem)return;$('#viewerImage').src=viewerItem.i
 function show(id){$('#'+id).classList.add('on');$('#'+id).setAttribute('aria-hidden','false')}
 function hide(id){$('#'+id).classList.remove('on');$('#'+id).setAttribute('aria-hidden','true')}
 function updateAdminButton(){$('#adminBtn').textContent=admin?'⚙️':'🔒'}
+async function openTracking(){
+  const saved=trackingSaved();if(!saved)return toast('Aucune commande à suivre');
+  $('#trackingContent').innerHTML='<p>Chargement…</p>';$('#trackingScreen').classList.add('on');
+  try{
+    const d=await api('/api/order/status?id='+encodeURIComponent(saved.id)+'&key='+encodeURIComponent(saved.key),{method:'GET'});
+    const o=d.order,steps=orderSteps(),idx=Math.max(0,steps.findIndex(x=>x.id===o.status));
+    $('#trackingContent').innerHTML='<div class="track-number">Commande '+o.orderNumber+'</div>'+
+      steps.map((s,i)=>'<div class="track-step '+(i<idx?'done':i===idx?'current':'')+'"><span class="mark">'+(i<=idx?'✓':(i+1))+'</span><div><strong>'+s.label+'</strong><small>'+s.note+'</small></div></div>').join('');
+  }catch(e){$('#trackingContent').innerHTML='<p>Suivi indisponible pour le moment.</p>'}
+}
+function orderItemHtml(x){return '<div class="admin-order-item">'+(x.image?'<img src="'+x.image+'" alt="">':'')+'<div><b>'+x.name+'</b><small>'+(x.shade||'')+' · Quantité '+x.qty+'</small></div></div>'}
+async function loadAdminOrders(){
+  const box=$('#adminOrdersList');box.innerHTML='<p>Chargement…</p>';
+  try{
+    const d=await api('/api/admin/orders',{method:'GET'});
+    const all=d.orders||[];
+    const list=all.filter(o=>orderTab==='active'?['paid','in_progress'].includes(o.status):orderTab==='ready'?o.status==='done':o.status==='sent');
+    box.innerHTML=list.length?'':'<p style="text-align:center;color:#777">Aucune commande</p>';
+    list.forEach(o=>{
+      const card=document.createElement('div');card.className='admin-order-card';
+      let action='';
+      if(o.status==='paid') action='<button class="order-action" data-act="claim">Je m’en occupe</button>';
+      else if(o.status==='in_progress') action=o.assignedTo===adminName?'<button class="order-action" data-act="finish">Commande terminée</button>':'<button class="order-action" disabled>'+o.assignedTo+' s’en occupe</button>';
+      else if(o.status==='done') action='<button class="order-action" data-act="send">Envoyé</button>';
+      card.innerHTML='<div class="admin-order-head"><b>'+o.orderNumber+'</b><span class="admin-order-status">'+statusLabel(o.status)+'</span></div>'+
+        '<div class="order-customer">'+o.first+' '+o.last+' · '+o.phone+'<br>'+o.deliveryText+'</div>'+
+        (o.items||[]).map(orderItemHtml).join('')+action;
+      const b=card.querySelector('.order-action:not([disabled])');
+      if(b)b.onclick=async()=>{try{await api('/api/admin/order/'+b.dataset.act,{method:'POST',body:JSON.stringify({id:o.id})});await loadAdminOrders()}catch(e){toast(e.message)}};
+      box.appendChild(card);
+    });
+  }catch(e){box.innerHTML='<p>Connexion aux commandes impossible.</p>'}
+}
+async function openAdminOrders(){hide('adminModal');$('#adminOrdersScreen').classList.add('on');await loadAdminOrders()}
+
 function openAdmin(){if(!admins||!admins.John||!admins['Marlène']){$('#adminSetup').classList.remove('hidden');$('#adminLogin').classList.add('hidden');$('#adminSettings').classList.add('hidden');$('#adminTitle').textContent='Créer les deux accès'}else if(admin){$('#adminSetup').classList.add('hidden');$('#adminLogin').classList.add('hidden');$('#adminSettings').classList.remove('hidden');$('#adminWho').textContent=adminName}else{$('#adminSetup').classList.add('hidden');$('#adminLogin').classList.remove('hidden');$('#adminSettings').classList.add('hidden');$('#adminTitle').textContent='Connexion administrateur'}show('adminModal')}
 function fileData(input){return new Promise(resolve=>{const f=input.files&&input.files[0];if(!f)return resolve('');const r=new FileReader();r.onload=()=>resolve(String(r.result||''));r.onerror=()=>resolve('');r.readAsDataURL(f)})}
 function openProductModal(p=null){editing=p;$('#productModalTitle').textContent=p?'Modifier l’article':'Ajouter un article';$('#productName').value=p?.name||'';$('#productInfo').value=p?.info||'';$('#productPrice').value=p?.price||'';fillColorAdmin(p?.colorFamily||guessColorFamily(p||{}),p?.colorShade||'');['photo1','photo2','photo3'].forEach(id=>$('#'+id).value='');show('productModal')}
@@ -246,7 +299,7 @@ function animateToCart(btn,p){try{const target=$('#cartBtn'),a=btn.getBoundingCl
 
 $('.category').forEach(b=>b.onclick=()=>withYarnLoader('Ouverture de la collection…',()=>{current=b.dataset.cat;colorFilter='toutes';page=1;render()}));$('#prevPage').onclick=()=>withYarnLoader('Page précédente…',()=>{page--;render();scrollTo({top:0,behavior:'smooth'})});$('#nextPage').onclick=()=>withYarnLoader('Page suivante…',()=>{page++;render();scrollTo({top:0,behavior:'smooth'})});
 $('#viewerBack').onclick=()=>hide('viewer');$('#viewerPrev').onclick=()=>{viewerIndex=(viewerIndex-1+viewerItem.imgs.length)%viewerItem.imgs.length;renderViewer()};$('#viewerNext').onclick=()=>{viewerIndex=(viewerIndex+1)%viewerItem.imgs.length;renderViewer()};
-$('#cartBtn').onclick=()=>{renderCart();$('#cartScreen').classList.add('on')};$('#cartBack').onclick=()=>$('#cartScreen').classList.remove('on');
+$('#cartBtn').onclick=()=>{renderCart();$('#cartScreen').classList.add('on')};$('#trackingBtn').onclick=openTracking;$('#trackingBack').onclick=()=>$('#trackingScreen').classList.remove('on');$('#adminOrdersBack').onclick=()=>$('#adminOrdersScreen').classList.remove('on');$('#adminOrdersBtn').onclick=openAdminOrders;$('[data-order-tab]').forEach(b=>b.onclick=()=>{orderTab=b.dataset.orderTab;$('[data-order-tab]').forEach(x=>x.classList.toggle('active',x===b));loadAdminOrders()});$('#cartBack').onclick=()=>$('#cartScreen').classList.remove('on');
 $('#shipBtn').onclick=()=>{delivery='ship';$('#shipBtn').classList.add('active');$('#pickupBtn').classList.remove('active');$('#pickupBox').classList.add('hidden');renderCart()};$('#pickupBtn').onclick=()=>{delivery='pickup';$('#pickupBtn').classList.add('active');$('#shipBtn').classList.remove('active');$('#pickupBox').classList.remove('hidden');renderCart()};
 $('#marketSearch').oninput=e=>{const q=e.target.value.toLowerCase(),r=$('#marketResults');r.innerHTML='';if(q.length<2)return;markets.filter(m=>m.toLowerCase().includes(q)).slice(0,8).forEach(m=>{const b=document.createElement('button');b.textContent=m;b.onclick=()=>{selectedMarket=m;$('#selectedMarket').textContent='Choisi : '+m;r.innerHTML=''};r.appendChild(b)})};
 $('#orderBtn').onclick=()=>{if(!cart.length)return toast('Panier vide');if(delivery==='pickup'&&!selectedMarket)return toast('Choisis un marché');const p=$('#orderPreview');p.innerHTML='';cartItems().forEach(x=>{const d=document.createElement('div');d.className='line';d.innerHTML='<img src="'+x.p.imgs[0]+'"><span>'+x.p.name+' — '+(x.p.colorShade||'')+'<br><small>Code '+(x.p.articleCode||'')+'</small> × '+x.qty+'</span><b>'+money(euro(x.p.price)*x.qty)+'</b>';p.appendChild(d)});show('orderModal')};
@@ -256,9 +309,9 @@ $('#giftYes').onclick=()=>{giftOrder=true;$('#giftYes').classList.add('active');
 $('#sendOrder').onclick=()=>{const first=$('#buyerFirst').value.trim(),last=$('#buyerLast').value.trim(),email=$('#buyerEmail').value.trim(),phone=$('#buyerPhone').value.trim();if(!first||!last||!email||!phone)return toast('Remplis les informations');const t=totals(),lines=cartItems().map(x=>'• '+x.p.name+' — '+(x.p.colorShade||'')+' — Code '+(x.p.articleCode||'')+' — Qté '+x.qty+' — '+money(euro(x.p.price)*x.qty)).join('\n');const mode=delivery==='pickup'?'À venir chercher — '+selectedMarket:'Envoi à domicile';const giftFor=$('#giftFor')?.value.trim()||'',giftMessage=$('#giftMessage')?.value.trim()||'',hidePrice=$('#hidePriceGift')?.checked===true;const giftBlock=giftOrder?'\n\n🎁 CADEAU : OUI'+(giftFor?'\nPour : '+giftFor:'')+(giftMessage?'\nMessage : '+giftMessage:'')+(hidePrice?'\nNe pas mettre le prix dans le colis':''):'\n\nCadeau : Non';const body='Commande Marlène et moi\n\nClient : '+first+' '+last+'\nE-mail : '+email+'\nTéléphone : '+phone+'\n'+mode+'\n\n'+lines+'\n\nTotal : '+money(t.total)+giftBlock;location.href='mailto:appli.suzon@gmail.com?subject='+encodeURIComponent('Commande Marlène et moi — '+first+' '+last)+'&body='+encodeURIComponent(body);hide('orderModal');toast('Commande préparée')};
 $('#adminBtn').onclick=openAdmin;
 $$('.admin-pill').forEach(b=>b.onclick=()=>{selectedAdmin=b.dataset.admin;$$('.admin-pill').forEach(x=>x.classList.toggle('active',x===b))});
-$('#saveAdminCodes').onclick=()=>{const j=$('#johnCode').value.trim(),m=$('#marleneCode').value.trim();if(j.length<4||m.length<4||j===m)return toast('Codes différents de 4 caractères minimum');admins={John:j,'Marlène':m};safeSet(ADMINS,JSON.stringify(admins));hide('adminModal');toast('Codes enregistrés')};
-$('#loginAdmin').onclick=()=>{const code=$('#adminCode').value;if(!admins||admins[selectedAdmin]!==code)return toast('Code incorrect');admin=true;adminName=selectedAdmin;safeSet(ADMIN_SESSION,'1');safeSet(ADMIN_NAME,adminName);hide('adminModal');render();toast('Mode administrateur')};
-$('#logoutAdmin').onclick=()=>{admin=false;adminName='';safeSet(ADMIN_SESSION,'0');safeSet(ADMIN_NAME,'');hide('adminModal');render()};
+$('#saveAdminCodes').onclick=async()=>{const j=$('#johnCode').value.trim(),m=$('#marleneCode').value.trim();if(j.length<4||m.length<4||j===m)return toast('Codes différents de 4 caractères minimum');admins={John:j,'Marlène':m};safeSet(ADMINS,JSON.stringify(admins));try{const d=await api('/api/admin/setup',{method:'POST',body:JSON.stringify({johnCode:j,marleneCode:m})});admin=true;adminName=d.admin;adminToken=d.token;safeSet(ADMIN_TOKEN,adminToken);safeSet(ADMIN_SESSION,'1');safeSet(ADMIN_NAME,adminName)}catch{}hide('adminModal');render();toast('Codes enregistrés')};
+$('#loginAdmin').onclick=async()=>{const code=$('#adminCode').value;if(!admins||admins[selectedAdmin]!==code)return toast('Code incorrect');try{const d=await api('/api/admin/login',{method:'POST',body:JSON.stringify({admin:selectedAdmin,code})});adminToken=d.token;safeSet(ADMIN_TOKEN,adminToken)}catch(e){return toast(e.message)}admin=true;adminName=selectedAdmin;safeSet(ADMIN_SESSION,'1');safeSet(ADMIN_NAME,adminName);hide('adminModal');render();toast('Mode administrateur')};
+$('#logoutAdmin').onclick=()=>{admin=false;adminName='';adminToken='';safeSet(ADMIN_SESSION,'0');safeSet(ADMIN_NAME,'');safeSet(ADMIN_TOKEN,'');hide('adminModal');render()};
 $('#changeCodeOpen').onclick=()=>{hide('adminModal');show('changeCodeModal')};
 $('#saveNewCode').onclick=()=>{const c=$('#currentCode').value,n=$('#newCode').value,f=$('#confirmCode').value,msg=$('#changeCodeMessage');if(!admins||admins[adminName]!==c){msg.textContent='Code actuel incorrect';return}if(n.length<4){msg.textContent='4 caractères minimum';return}if(n!==f){msg.textContent='Les deux nouveaux codes ne correspondent pas';return}admins[adminName]=n;safeSet(ADMINS,JSON.stringify(admins));msg.textContent='Code changé';setTimeout(()=>hide('changeCodeModal'),700)};
 $('#addProductBtn').onclick=()=>openProductModal();
