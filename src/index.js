@@ -1,61 +1,29 @@
-export class ShopState {
-  constructor(state, env){ this.state=state; this.env=env; }
-  async load(){ return (await this.state.storage.get("shop")) || {admins:null,tokens:{},orders:[],revision:0,lastEvent:null,orderSeq:0}; }
-  async save(s){ await this.state.storage.put("shop",s); }
-  json(data,status=200){ return new Response(JSON.stringify(data),{status,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store"}}); }
-  async hash(v){ const b=new TextEncoder().encode("marlene-et-moi|"+String(v)); const d=await crypto.subtle.digest("SHA-256",b); return [...new Uint8Array(d)].map(x=>x.toString(16).padStart(2,"0")).join(""); }
-  token(){ const a=new Uint8Array(24); crypto.getRandomValues(a); return [...a].map(x=>x.toString(16).padStart(2,"0")).join(""); }
-  auth(req,s){ const h=req.headers.get("authorization")||""; const t=h.startsWith("Bearer ")?h.slice(7):""; return t&&s.tokens[t]?{token:t,admin:s.tokens[t]}:null; }
-  summarize(o){ return (o.items||[]).map(x=>x.name+" "+(x.shade||"")+" ×"+x.qty).join(" · ")+"\nTotal : "+(o.totalText||""); }
-  async fetch(req){
-    const url=new URL(req.url), path=url.pathname; let s=await this.load();
-    if(path==="/api/status" && req.method==="GET") return this.json({adminsReady:!!s.admins});
-    if(path==="/api/admin/setup" && req.method==="POST"){
-      if(s.admins) return this.json({error:"Administrateurs déjà configurés"},409);
-      const b=await req.json();
-      if(!b.johnCode||!b.marleneCode||b.johnCode===b.marleneCode) return this.json({error:"Codes invalides"},400);
-      s.admins={John:{hash:await this.hash(b.johnCode)},"Marlène":{hash:await this.hash(b.marleneCode)}};
-      const t=this.token(); s.tokens[t]="John"; await this.save(s); return this.json({token:t,admin:"John"});
-    }
-    if(path==="/api/admin/login" && req.method==="POST"){
-      if(!s.admins) return this.json({error:"Administrateurs non configurés"},409);
-      const b=await req.json(); const a=b.admin==="Marlène"?"Marlène":"John";
-      if(await this.hash(b.code||"")!==s.admins[a].hash) return this.json({error:"Code incorrect"},401);
-      const t=this.token(); s.tokens[t]=a; await this.save(s); return this.json({token:t,admin:a});
-    }
-    if(path==="/api/order" && req.method==="POST"){
-      const b=await req.json();
-      if(!b.first||!b.last||!b.email||!b.phone||!Array.isArray(b.items)||!b.items.length) return this.json({error:"Commande incomplète"},400);
-      const id=crypto.randomUUID(), key=this.token(); s.orderSeq=(s.orderSeq||0)+1;
-      const now=new Date(), y=now.getUTCFullYear(), m=String(now.getUTCMonth()+1).padStart(2,"0"), d=String(now.getUTCDate()).padStart(2,"0");
-      const orderNumber="ME-"+y+m+d+"-"+String(s.orderSeq).padStart(3,"0");
-      const o={id,key,orderNumber,first:String(b.first).slice(0,80),last:String(b.last).slice(0,80),email:String(b.email).slice(0,160),phone:String(b.phone).slice(0,60),address:String(b.address||"").slice(0,220),postal:String(b.postal||"").slice(0,20),city:String(b.city||"").slice(0,100),deliveryText:String(b.deliveryText||"").slice(0,200),gift:{enabled:!!(b.gift&&b.gift.enabled),forName:String((b.gift&&b.gift.forName)||"").slice(0,100),message:String((b.gift&&b.gift.message)||"").slice(0,500),hidePrice:!!(b.gift&&b.gift.hidePrice)},totalText:String(b.totalText||"").slice(0,40),items:b.items.slice(0,50).map(x=>({name:String(x.name||"").slice(0,160),shade:String(x.shade||"").slice(0,80),qty:Math.max(1,Math.min(99,Number(x.qty)||1)),lineTotal:String(x.lineTotal||"").slice(0,40),price:String(x.price||"").slice(0,40),image:String(x.image||"").slice(0,250000)})),status:"paid",assignedTo:null,completedBy:null,sentBy:null,createdAt:now.toISOString(),updatedAt:now.toISOString()};
-      s.orders.unshift(o); if(s.orders.length>300) s.orders.length=300;
-      s.revision=(s.revision||0)+1;s.lastEvent={type:"new_order",revision:s.revision,orderId:id,orderName:o.first+" "+o.last,summary:this.summarize(o),at:o.updatedAt};
-      await this.save(s); return this.json({ok:true,id,key,orderNumber});
-    }
-    if(path==="/api/order/status" && req.method==="GET"){
-      const o=(s.orders||[]).find(x=>x.id===url.searchParams.get("id")&&x.key===url.searchParams.get("key"));
-      if(!o)return this.json({error:"Commande introuvable"},404);
-      return this.json({order:{id:o.id,orderNumber:o.orderNumber,status:o.status,updatedAt:o.updatedAt}});
-    }
-    const au=this.auth(req,s); if(!au) return this.json({error:"Connexion administrateur requise"},401);
-    if(path==="/api/admin/orders" && req.method==="GET") return this.json({orders:(s.orders||[]).map(({key,...o})=>o),revision:s.revision||0,lastEvent:s.lastEvent||null,admin:au.admin});
-    if(path==="/api/admin/change-code" && req.method==="POST"){
-      const b=await req.json();if(!b.newCode||String(b.newCode).length<4)return this.json({error:"Nouveau code trop court"},400);
-      if(await this.hash(b.currentCode||"")!==s.admins[au.admin].hash)return this.json({error:"Code actuel incorrect"},401);
-      s.admins[au.admin].hash=await this.hash(b.newCode);await this.save(s);return this.json({ok:true});
-    }
-    if((path==="/api/admin/order/claim"||path==="/api/admin/order/finish"||path==="/api/admin/order/send") && req.method==="POST"){
-      const b=await req.json(),o=(s.orders||[]).find(x=>x.id===b.id);if(!o)return this.json({error:"Commande introuvable"},404);
-      let type="";
-      if(path.endsWith("/claim")){if(o.status!=="paid")return this.json({error:(o.assignedTo||"Quelqu’un")+" s’en occupe déjà"},409);o.status="in_progress";o.assignedTo=au.admin;type="claimed";}
-      else if(path.endsWith("/finish")){if(o.status!=="in_progress"||o.assignedTo!==au.admin)return this.json({error:"Seul "+(o.assignedTo||"l’administrateur")+" peut terminer cette commande"},409);o.status="done";o.completedBy=au.admin;type="done";}
-      else {if(o.status!=="done")return this.json({error:"Le colis doit être terminé avant l’envoi"},409);o.status="sent";o.sentBy=au.admin;type="sent";}
-      o.updatedAt=new Date().toISOString();s.revision=(s.revision||0)+1;s.lastEvent={type,by:au.admin,revision:s.revision,orderId:o.id,summary:this.summarize(o),at:o.updatedAt};
-      await this.save(s);return this.json({ok:true,order:o,revision:s.revision});
-    }
-    return this.json({error:"Introuvable"},404);
-  }
+export class ShopState{
+constructor(state,env){this.state=state;this.env=env}
+json(x,s=200){return new Response(JSON.stringify(x),{status:s,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store"}})}
+async hash(v){const d=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("marlene-et-moi|"+String(v)));return[...new Uint8Array(d)].map(x=>x.toString(16).padStart(2,"0")).join("")}
+token(){const a=new Uint8Array(24);crypto.getRandomValues(a);return[...a].map(x=>x.toString(16).padStart(2,"0")).join("")}
+async load(){let s=await this.state.storage.get("shop");if(s)return s;s={admins:null,tokens:{},orders:[],seq:0,products:{
+echarpes:[
+{id:"e1",name:"Écharpe verte",info:"Laine mélangée · 180 × 65 cm",price:"39 €",family:"vert",shade:"Vert",imgs:["scarf-1.jpg","scarf-1.jpg","scarf-1.jpg"]},
+{id:"e2",name:"Écharpe écrue",info:"Maille épaisse · 185 × 70 cm",price:"42 €",family:"beige",shade:"Écru",imgs:["scarf-2.jpg","scarf-2.jpg","scarf-2.jpg"]},
+{id:"e3",name:"Écharpe bleu marine",info:"Laine mérinos · 180 × 65 cm",price:"45 €",family:"bleu",shade:"Bleu marine",imgs:["scarf-3.jpg","scarf-3.jpg","scarf-3.jpg"]},
+{id:"e4",name:"Écharpe gris clair",info:"Mélange cachemire · 180 × 65 cm",price:"48 €",family:"gris",shade:"Gris clair",imgs:["scarf-4.jpg","scarf-4.jpg","scarf-4.jpg"]}],
+vestes:[],bracelets:[]}};await this.state.storage.put("shop",s);return s}
+auth(req,s){const h=req.headers.get("authorization")||"",t=h.startsWith("Bearer ")?h.slice(7):"";return t&&s.tokens[t]?s.tokens[t]:null}
+async fetch(req){const u=new URL(req.url),p=u.pathname,s=await this.load();
+if(p==="/api/status")return this.json({adminsReady:!!s.admins});
+if(p==="/api/catalog")return this.json({products:s.products});
+if(p==="/api/admin/setup"&&req.method==="POST"){if(s.admins)return this.json({error:"Administrateurs déjà configurés"},409);const b=await req.json();if(!b.johnCode||!b.marleneCode||b.johnCode===b.marleneCode)return this.json({error:"Codes invalides"},400);s.admins={John:await this.hash(b.johnCode),"Marlène":await this.hash(b.marleneCode)};const t=this.token();s.tokens[t]="John";await this.state.storage.put("shop",s);return this.json({token:t,admin:"John"})}
+if(p==="/api/admin/login"&&req.method==="POST"){if(!s.admins)return this.json({error:"Administrateurs non configurés"},409);const b=await req.json(),a=b.admin==="Marlène"?"Marlène":"John";if(await this.hash(b.code||"")!==s.admins[a])return this.json({error:"Code incorrect"},401);const t=this.token();s.tokens[t]=a;await this.state.storage.put("shop",s);return this.json({token:t,admin:a})}
+if(p==="/api/order"&&req.method==="POST"){const b=await req.json();if(!b.first||!b.last||!b.email||!b.phone||!Array.isArray(b.items)||!b.items.length)return this.json({error:"Commande incomplète"},400);const id=crypto.randomUUID(),key=this.token();s.seq=(s.seq||0)+1;const now=new Date(),num="ME-"+now.getUTCFullYear()+String(now.getUTCMonth()+1).padStart(2,"0")+String(now.getUTCDate()).padStart(2,"0")+"-"+String(s.seq).padStart(3,"0");const o={id,key,orderNumber:num,status:"new",assignedTo:null,completedBy:null,sentBy:null,createdAt:now.toISOString(),updatedAt:now.toISOString(),first:String(b.first).slice(0,80),last:String(b.last).slice(0,80),email:String(b.email).slice(0,160),phone:String(b.phone).slice(0,60),address:String(b.address||"").slice(0,220),postal:String(b.postal||"").slice(0,20),city:String(b.city||"").slice(0,100),deliveryText:String(b.deliveryText||"").slice(0,200),totalText:String(b.totalText||"").slice(0,40),gift:{enabled:!!b.gift?.enabled,forName:String(b.gift?.forName||"").slice(0,100),message:String(b.gift?.message||"").slice(0,500),hidePrice:!!b.gift?.hidePrice},items:b.items.slice(0,50).map(x=>({name:String(x.name||"").slice(0,160),shade:String(x.shade||"").slice(0,80),qty:Math.max(1,Math.min(99,Number(x.qty)||1)),price:String(x.price||"").slice(0,40),lineTotal:String(x.lineTotal||"").slice(0,40),image:String(x.image||"").slice(0,260000)}))};s.orders.unshift(o);if(s.orders.length>300)s.orders.length=300;await this.state.storage.put("shop",s);return this.json({ok:true,id,key,orderNumber:num})}
+if(p==="/api/order/status"){const o=s.orders.find(x=>x.id===u.searchParams.get("id")&&x.key===u.searchParams.get("key"));return o?this.json({order:{orderNumber:o.orderNumber,status:o.status,updatedAt:o.updatedAt}}):this.json({error:"Commande introuvable"},404)}
+const a=this.auth(req,s);if(!a)return this.json({error:"Connexion administrateur requise"},401);
+if(p==="/api/admin/orders")return this.json({orders:s.orders.map(({key,...o})=>o)});
+if(p==="/api/admin/change-code"&&req.method==="POST"){const b=await req.json();if(await this.hash(b.currentCode||"")!==s.admins[a])return this.json({error:"Code actuel incorrect"},401);if(String(b.newCode||"").length<4)return this.json({error:"Nouveau code trop court"},400);s.admins[a]=await this.hash(b.newCode);await this.state.storage.put("shop",s);return this.json({ok:true})}
+if(p==="/api/admin/product/save"&&req.method==="POST"){const b=await req.json(),cat=["echarpes","vestes","bracelets"].includes(b.category)?b.category:"echarpes";let item=null;if(b.id){for(const c of Object.keys(s.products)){const x=s.products[c].find(p=>p.id===b.id);if(x){item=x;if(c!==cat){s.products[c]=s.products[c].filter(p=>p.id!==b.id);s.products[cat].push(x)}break}}}if(!item){item={id:"p"+Date.now()};s.products[cat].push(item)}item.name=String(b.name||"").slice(0,160);item.info=String(b.info||"").slice(0,300);item.price=String(b.price||"").slice(0,40);item.family=String(b.family||"multicolore").slice(0,40);item.shade=String(b.shade||"").slice(0,80);if(Array.isArray(b.imgs)&&b.imgs.length)item.imgs=b.imgs.slice(0,3);if(!item.imgs?.length)item.imgs=["scarf-1.jpg","scarf-1.jpg","scarf-1.jpg"];await this.state.storage.put("shop",s);return this.json({ok:true,item})}
+if(p==="/api/admin/product/delete"&&req.method==="POST"){const b=await req.json();for(const c of Object.keys(s.products))s.products[c]=s.products[c].filter(x=>x.id!==b.id);await this.state.storage.put("shop",s);return this.json({ok:true})}
+if(["/api/admin/order/claim","/api/admin/order/finish","/api/admin/order/send"].includes(p)&&req.method==="POST"){const b=await req.json(),o=s.orders.find(x=>x.id===b.id);if(!o)return this.json({error:"Commande introuvable"},404);if(p.endsWith("/claim")){if(o.status!=="new")return this.json({error:(o.assignedTo||"Quelqu’un")+" s’en occupe déjà"},409);o.status="in_progress";o.assignedTo=a}else if(p.endsWith("/finish")){if(o.status!=="in_progress"||o.assignedTo!==a)return this.json({error:"Seul "+(o.assignedTo||"l’administrateur")+" peut terminer cette commande"},409);o.status="done";o.completedBy=a}else{if(o.status!=="done")return this.json({error:"Le colis doit être terminé avant l’envoi"},409);o.status="sent";o.sentBy=a}o.updatedAt=new Date().toISOString();await this.state.storage.put("shop",s);return this.json({ok:true})}
+return this.json({error:"Introuvable"},404)}
 }
-export default {async fetch(request,env){const url=new URL(request.url);if(url.pathname.startsWith("/api/")){const id=env.SHOP.idFromName("marlene-et-moi");return env.SHOP.get(id).fetch(request)}return env.ASSETS.fetch(request)}};
+export default{async fetch(req,env){const u=new URL(req.url);if(u.pathname.startsWith("/api/")){const id=env.SHOP.idFromName("marlene-et-moi");return env.SHOP.get(id).fetch(req)}return env.ASSETS.fetch(req)}};
