@@ -89,21 +89,23 @@ let colorFilter='toutes';
 function colorFamilyById(id){return COLOR_FAMILIES.find(c=>c.id===id)||COLOR_FAMILIES[0]}
 function colorCodeForShade(shade){
   const fixed={
-    'Vert':'V','Vert clair':'VC','Vert foncé':'VF','Vert pomme':'VP','Vert olive':'VO','Vert sapin':'VS','Vert menthe':'VM','Kaki':'KA',
-    'Bleu':'B','Bleu clair':'BC','Bleu foncé':'BF','Bleu marine':'BM','Bleu ciel':'BCI','Bleu glacier':'BG','Bleu roi':'BR','Turquoise':'TU',
-    'Rouge':'R','Rouge clair':'RC','Rouge foncé':'RF','Bordeaux':'BO','Grenat':'GR','Framboise':'FR',
-    'Rose':'RO','Rose clair':'ROC','Rose poudré':'RP','Vieux rose':'VR','Fuchsia':'FU','Saumon':'SA',
-    'Violet':'VI','Violet clair':'VIC','Violet foncé':'VIF','Prune':'PR','Lilas':'LI','Lavande':'LA',
-    'Jaune':'J','Jaune clair':'JC','Moutarde':'MO','Or':'OR','Citron':'CI',
-    'Orange':'O','Orange clair':'OC','Orange foncé':'OF','Terracotta':'TE','Cuivre':'CU',
-    'Beige':'BE','Écru':'EC','Crème':'CR','Sable':'SB','Camel':'CA','Taupe':'TA',
-    'Marron':'MA','Marron clair':'MAC','Marron foncé':'MAF','Chocolat':'CH','Noisette':'NO','Caramel':'CAR',
-    'Gris':'G','Gris clair':'GC','Gris foncé':'GF','Anthracite':'AN','Argent':'AR',
-    'Noir':'N','Noir profond':'NP','Blanc':'BL','Blanc cassé':'BCS','Ivoire':'IV','Multicolore':'MU'
+    'Vert':'VER','Vert clair':'VER-CLA','Vert foncé':'VER-FON','Vert pomme':'VER-POM','Vert olive':'VER-OLI','Vert sapin':'VER-SAP','Vert menthe':'VER-MEN','Kaki':'KAK',
+    'Bleu':'BLE','Bleu clair':'BLE-CLA','Bleu foncé':'BLE-FON','Bleu marine':'BLE-MAR','Bleu ciel':'BLE-CIE','Bleu glacier':'BLE-GLA','Bleu roi':'BLE-ROI','Turquoise':'TUR',
+    'Rouge':'ROU','Rouge clair':'ROU-CLA','Rouge foncé':'ROU-FON','Bordeaux':'BOR','Grenat':'GRE','Framboise':'FRA',
+    'Rose':'ROS','Rose clair':'ROS-CLA','Rose poudré':'ROS-POU','Vieux rose':'ROS-VIE','Fuchsia':'FUC','Saumon':'SAU',
+    'Violet':'VIO','Violet clair':'VIO-CLA','Violet foncé':'VIO-FON','Prune':'PRU','Lilas':'LIL','Lavande':'LAV',
+    'Jaune':'JAU','Jaune clair':'JAU-CLA','Moutarde':'MOU','Or':'OR','Citron':'CIT',
+    'Orange':'ORA','Orange clair':'ORA-CLA','Orange foncé':'ORA-FON','Terracotta':'TER','Cuivre':'CUI',
+    'Beige':'BEI','Écru':'ECR','Crème':'CRE','Sable':'SAB','Camel':'CAM','Taupe':'TAU',
+    'Marron':'MAR','Marron clair':'MAR-CLA','Marron foncé':'MAR-FON','Chocolat':'CHO','Noisette':'NOI','Caramel':'CAR',
+    'Gris':'GRI','Gris clair':'GRI-CLA','Gris foncé':'GRI-FON','Anthracite':'ANT','Argent':'ARG',
+    'Noir':'NOI','Noir profond':'NOI-PRO','Blanc':'BLA','Blanc cassé':'BLA-CAS','Ivoire':'IVO','Multicolore':'MUL'
   };
   if(fixed[shade])return fixed[shade];
-  const clean=String(shade||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
-  return clean.split(/\s+/).filter(Boolean).map(x=>x[0]).join('').toUpperCase().slice(0,4)||'CO';
+  const clean=String(shade||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();
+  if(!clean)return 'COU';
+  const parts=clean.split(/\s+/).filter(Boolean);
+  return parts.length===1?parts[0].slice(0,3):parts.map((x,i)=>x.slice(0,i===0?3:3)).join('-').slice(0,11);
 }
 function codePart(s,n=4){
   return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase()
