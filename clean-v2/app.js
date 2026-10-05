@@ -87,6 +87,24 @@ const COLOR_FAMILIES=[
 ];
 let colorFilter='toutes';
 function colorFamilyById(id){return COLOR_FAMILIES.find(c=>c.id===id)||COLOR_FAMILIES[0]}
+function colorCodeForShade(shade){
+  const fixed={
+    'Vert':'V','Vert clair':'VC','Vert foncé':'VF','Vert pomme':'VP','Vert olive':'VO','Vert sapin':'VS','Vert menthe':'VM','Kaki':'KA',
+    'Bleu':'B','Bleu clair':'BC','Bleu foncé':'BF','Bleu marine':'BM','Bleu ciel':'BCI','Bleu glacier':'BG','Bleu roi':'BR','Turquoise':'TU',
+    'Rouge':'R','Rouge clair':'RC','Rouge foncé':'RF','Bordeaux':'BO','Grenat':'GR','Framboise':'FR',
+    'Rose':'RO','Rose clair':'ROC','Rose poudré':'RP','Vieux rose':'VR','Fuchsia':'FU','Saumon':'SA',
+    'Violet':'VI','Violet clair':'VIC','Violet foncé':'VIF','Prune':'PR','Lilas':'LI','Lavande':'LA',
+    'Jaune':'J','Jaune clair':'JC','Moutarde':'MO','Or':'OR','Citron':'CI',
+    'Orange':'O','Orange clair':'OC','Orange foncé':'OF','Terracotta':'TE','Cuivre':'CU',
+    'Beige':'BE','Écru':'EC','Crème':'CR','Sable':'SB','Camel':'CA','Taupe':'TA',
+    'Marron':'MA','Marron clair':'MAC','Marron foncé':'MAF','Chocolat':'CH','Noisette':'NO','Caramel':'CAR',
+    'Gris':'G','Gris clair':'GC','Gris foncé':'GF','Anthracite':'AN','Argent':'AR',
+    'Noir':'N','Noir profond':'NP','Blanc':'BL','Blanc cassé':'BCS','Ivoire':'IV','Multicolore':'MU'
+  };
+  if(fixed[shade])return fixed[shade];
+  const clean=String(shade||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+  return clean.split(/\s+/).filter(Boolean).map(x=>x[0]).join('').toUpperCase().slice(0,4)||'CO';
+}
 function codePart(s,n=4){
   return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase()
     .replace(/[^A-Z0-9]+/g,'').slice(0,n)||'XX';
@@ -141,7 +159,7 @@ function fillColorAdmin(familyId,shade){
   fam.value=familyId||'multicolore';
   const refresh=()=>{
     const c=colorFamilyById(fam.value);
-    sh.innerHTML=(c.shades||[c.label]).map(x=>'<option value="'+x.replace(/"/g,'&quot;')+'">'+x+'</option>').join('');
+    sh.innerHTML=(c.shades||[c.label]).map(x=>'<option value="'+x.replace(/"/g,'&quot;')+'">'+x+' — '+colorCodeForShade(x)+'</option>').join('');
     if(shade && [...sh.options].some(o=>o.value===shade))sh.value=shade;
   };
   fam.onchange=()=>{shade='';refresh()};
