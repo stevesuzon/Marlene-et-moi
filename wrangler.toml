@@ -3,7 +3,7 @@ main = "src/index.js"
 compatibility_date = "2026-10-04"
 
 [build]
-command = "rm -rf site && mkdir -p site && unzip -o Marlene-et-moi-GitHub-Cloudflare.zip -d site && cp clean-v3/index.html site/public/index.html && cp clean-v3/styles.css site/public/styles.css && cp clean-v3/app.js site/public/app.js && cp clean-v3/sw.js site/public/sw.js"
+command = "rm -rf site && mkdir -p site && unzip -o Marlene-et-moi-GitHub-Cloudflare.zip -d site && cp clean-v4/index.html site/public/index.html && cp clean-v4/styles.css site/public/styles.css && cp clean-v4/app.js site/public/app.js && cp clean-v4/sw.js site/public/sw.js"
 
 [assets]
 directory = "./site/public"
