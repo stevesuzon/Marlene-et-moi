@@ -14,5 +14,5 @@ name = "SHOP"
 class_name = "ShopState"
 
 [[migrations]]
-tag = "clean-v100"
+tag = "v1"
 new_sqlite_classes = ["ShopState"]
