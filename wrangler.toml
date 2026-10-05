@@ -3,7 +3,7 @@ compatibility_date = "2026-10-04"
 main = "./src/index.js"
 
 [build]
-command = "rm -rf site && mkdir -p site && unzip -o Marlene-et-moi-GitHub-Cloudflare.zip -d site && node patch-v20.js"
+command = "rm -rf site && mkdir -p site && unzip -o Marlene-et-moi-GitHub-Cloudflare.zip -d site && cp v20-admin.js site/public/v20-admin.js && node -e \"const fs=require('fs');const p='site/public/index.html';let s=fs.readFileSync(p,'utf8');if(!s.includes('v20-admin.js'))s=s.replace('</body>','<script src=\\\"v20-admin.js\\\"></script></body>');fs.writeFileSync(p,s);const sw='site/public/sw.js';if(fs.existsSync(sw)){let w=fs.readFileSync(sw,'utf8').replace(/marlene-et-moi-v\\d+/g,'marlene-et-moi-v20');fs.writeFileSync(sw,w)}\""
 
 [assets]
 directory = "./site/public"
