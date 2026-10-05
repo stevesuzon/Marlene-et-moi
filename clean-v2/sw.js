@@ -1,9 +1,9 @@
-const CACHE='marlene-clean-v8';
+const CACHE='marlene-clean-v9';
 const CORE=[
   './',
   'index.html',
-  'styles.css?v=8',
-  'app.js?v=8',
+  'styles.css?v=9',
+  'app.js?v=9',
   'manifest.webmanifest',
   'banner-marlene-et-moi.png',
   'pelote-multicolore.png',
