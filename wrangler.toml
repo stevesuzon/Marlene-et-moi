@@ -1,8 +1,18 @@
 name = "marlene-et-moi"
+main = "src/index.js"
 compatibility_date = "2026-10-04"
 
 [build]
-command = "rm -rf site && mkdir -p site && unzip -o Marlene-et-moi-GitHub-Cloudflare.zip -d site && cp clean-v2/index.html site/public/index.html && cp clean-v2/styles.css site/public/styles.css && cp clean-v2/app.js site/public/app.js && cp clean-v2/sw.js site/public/sw.js"
+command = "rm -rf site && mkdir -p site && unzip -o Marlene-et-moi-GitHub-Cloudflare.zip -d site && cp clean-v3/index.html site/public/index.html && cp clean-v3/styles.css site/public/styles.css && cp clean-v3/app.js site/public/app.js && cp clean-v3/sw.js site/public/sw.js"
 
 [assets]
 directory = "./site/public"
+binding = "ASSETS"
+
+[[durable_objects.bindings]]
+name = "SHOP"
+class_name = "ShopState"
+
+[[migrations]]
+tag = "clean-v100"
+new_sqlite_classes = ["ShopState"]
