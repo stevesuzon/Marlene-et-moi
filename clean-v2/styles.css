@@ -177,3 +177,19 @@ button,input{font:inherit}.hero{position:relative;background:#e9eeeb}.hero>img{d
 @media(max-width:620px){
   .collection-update{top:22px!important}
 }
+
+/* CLEAN v4.2 — bouton remis en haut, bannière descendue légèrement */
+.hero{
+  padding-top:18px!important;
+}
+.collection-update{
+  top:8px!important;
+}
+.top-left{
+  top:8px!important;
+}
+@media(max-width:620px){
+  .hero{padding-top:16px!important}
+  .collection-update{top:7px!important}
+  .top-left{top:7px!important}
+}
