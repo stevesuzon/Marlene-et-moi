@@ -282,7 +282,7 @@ async function loadAdminOrders(){
       else if(o.status==='in_progress') action=o.assignedTo===adminName?'<button class="order-action" data-act="finish">Commande terminée</button>':'<button class="order-action" disabled>'+o.assignedTo+' s’en occupe</button>';
       else if(o.status==='done') action='<button class="order-action" data-act="send">Envoyé</button>';
       card.innerHTML='<div class="admin-order-head"><b>'+o.orderNumber+'</b><span class="admin-order-status">'+statusLabel(o.status)+'</span></div>'+
-        '<div class="order-customer">'+o.first+' '+o.last+' · '+o.phone+'<br>'+o.deliveryText+'</div>'+
+        '<div class="order-customer">'+o.first+' '+o.last+' · '+o.phone+'<br>'+o.email+'<br>'+((o.address||o.postal||o.city)?(o.address+' · '+o.postal+' '+o.city+'<br>'):'')+o.deliveryText+(o.gift&&o.gift.enabled?'<br>🎁 Cadeau'+(o.gift.forName?' pour '+o.gift.forName:'')+(o.gift.message?'<br>Message : '+o.gift.message:'')+(o.gift.hidePrice?'<br>Sans prix dans le colis':''):'')+'</div>'+
         (o.items||[]).map(orderItemHtml).join('')+action;
       const b=card.querySelector('.order-action:not([disabled])');
       if(b)b.onclick=async()=>{try{await api('/api/admin/order/'+b.dataset.act,{method:'POST',body:JSON.stringify({id:o.id})});await loadAdminOrders()}catch(e){toast(e.message)}};
@@ -292,7 +292,19 @@ async function loadAdminOrders(){
 }
 async function openAdminOrders(){hide('adminModal');$('#adminOrdersScreen').classList.add('on');await loadAdminOrders()}
 
-function openAdmin(){if(!admins||!admins.John||!admins['Marlène']){$('#adminSetup').classList.remove('hidden');$('#adminLogin').classList.add('hidden');$('#adminSettings').classList.add('hidden');$('#adminTitle').textContent='Créer les deux accès'}else if(admin){$('#adminSetup').classList.add('hidden');$('#adminLogin').classList.add('hidden');$('#adminSettings').classList.remove('hidden');$('#adminWho').textContent=adminName}else{$('#adminSetup').classList.add('hidden');$('#adminLogin').classList.remove('hidden');$('#adminSettings').classList.add('hidden');$('#adminTitle').textContent='Connexion administrateur'}show('adminModal')}
+async function openAdmin(){
+  try{
+    const st=await api('/api/status',{method:'GET'});
+    if(!st.adminsReady && admins&&admins.John&&admins['Marlène']){
+      const d=await api('/api/admin/setup',{method:'POST',body:JSON.stringify({johnCode:admins.John,marleneCode:admins['Marlène']})});
+      admin=true;adminName=d.admin;adminToken=d.token;safeSet(ADMIN_TOKEN,adminToken);safeSet(ADMIN_SESSION,'1');safeSet(ADMIN_NAME,adminName);
+    }
+  }catch{}
+  if(!admins||!admins.John||!admins['Marlène']){$('#adminSetup').classList.remove('hidden');$('#adminLogin').classList.add('hidden');$('#adminSettings').classList.add('hidden');$('#adminTitle').textContent='Créer les deux accès'}
+  else if(admin){$('#adminSetup').classList.add('hidden');$('#adminLogin').classList.add('hidden');$('#adminSettings').classList.remove('hidden');$('#adminWho').textContent=adminName}
+  else{$('#adminSetup').classList.add('hidden');$('#adminLogin').classList.remove('hidden');$('#adminSettings').classList.add('hidden');$('#adminTitle').textContent='Connexion administrateur'}
+  show('adminModal')
+}
 function fileData(input){return new Promise(resolve=>{const f=input.files&&input.files[0];if(!f)return resolve('');const r=new FileReader();r.onload=()=>resolve(String(r.result||''));r.onerror=()=>resolve('');r.readAsDataURL(f)})}
 function openProductModal(p=null){editing=p;$('#productModalTitle').textContent=p?'Modifier l’article':'Ajouter un article';$('#productName').value=p?.name||'';$('#productInfo').value=p?.info||'';$('#productPrice').value=p?.price||'';fillColorAdmin(p?.colorFamily||guessColorFamily(p||{}),p?.colorShade||'');['photo1','photo2','photo3'].forEach(id=>$('#'+id).value='');show('productModal')}
 function animateToCart(btn,p){try{const target=$('#cartBtn'),a=btn.getBoundingClientRect(),b=target.getBoundingClientRect(),sx=a.left+a.width/2,sy=a.top+a.height/2,ex=b.left+b.width/2,ey=b.top+b.height/2,dir=ex>=sx?1:-1,bend=Math.max(90,Math.min(190,Math.abs(ex-sx)*.45)),c1x=sx+dir*bend,c1y=sy-90,c2x=ex-dir*bend*.55,c2y=ey+62,d='M '+sx+' '+sy+' C '+c1x+' '+c1y+', '+c2x+' '+c2y+', '+ex+' '+ey,ns='http://www.w3.org/2000/svg';const svg=document.createElementNS(ns,'svg');svg.classList.add('yarn-svg');svg.setAttribute('width',innerWidth);svg.setAttribute('height',innerHeight);svg.setAttribute('viewBox','0 0 '+innerWidth+' '+innerHeight);svg.innerHTML='<defs><linearGradient id="yarnGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#d7b6a6"/><stop offset="25%" stop-color="#d8c5a3"/><stop offset="50%" stop-color="#a8bfd8"/><stop offset="75%" stop-color="#d7afb3"/><stop offset="100%" stop-color="#b4b0ad"/></linearGradient></defs><path class="shadow" d="'+d+'"/><path class="main" d="'+d+'"/><path class="shine" d="'+d+'"/>';document.body.appendChild(svg);const path=svg.querySelector('.main'),els=[path,svg.querySelector('.shadow'),svg.querySelector('.shine')],len=path.getTotalLength();els.forEach(el=>{el.style.strokeDasharray=len;el.style.strokeDashoffset=len});const fly=document.createElement('img');fly.className='fly-photo';fly.src=p.imgs[0];fly.style.left=sx+'px';fly.style.top=sy+'px';document.body.appendChild(fly);const start=performance.now(),dur=1500;function f(now){const t=Math.min(1,(now-start)/dur),e=1-Math.pow(1-t,3),off=len*(1-e);els.forEach(el=>el.style.strokeDashoffset=off);const pt=path.getPointAtLength(len*e);fly.style.left=pt.x+'px';fly.style.top=pt.y+'px';fly.style.transform='translate(-50%,-50%) rotate('+(e*18-6)+'deg) scale('+(1-e*.48)+')';if(t<1)requestAnimationFrame(f);else{target.classList.remove('pop');void target.offsetWidth;target.classList.add('pop');setTimeout(()=>{svg.style.transition='opacity .35s';svg.style.opacity='0';fly.style.transition='opacity .3s,transform .3s';fly.style.opacity='0';fly.style.transform='translate(-50%,-50%) scale(.08)'},160);setTimeout(()=>{svg.remove();fly.remove();target.classList.remove('pop')},700)}}requestAnimationFrame(f)}catch{}}
@@ -306,14 +318,31 @@ $('#orderBtn').onclick=()=>{if(!cart.length)return toast('Panier vide');if(deliv
 $('[data-close]').forEach(b=>b.onclick=()=>hide(b.dataset.close));
 $('#giftNo').onclick=()=>{giftOrder=false;$('#giftNo').classList.add('active');$('#giftYes').classList.remove('active');$('#giftOptions').classList.add('hidden')};
 $('#giftYes').onclick=()=>{giftOrder=true;$('#giftYes').classList.add('active');$('#giftNo').classList.remove('active');$('#giftOptions').classList.remove('hidden')};
-$('#sendOrder').onclick=()=>{const first=$('#buyerFirst').value.trim(),last=$('#buyerLast').value.trim(),email=$('#buyerEmail').value.trim(),phone=$('#buyerPhone').value.trim();if(!first||!last||!email||!phone)return toast('Remplis les informations');const t=totals(),lines=cartItems().map(x=>'• '+x.p.name+' — '+(x.p.colorShade||'')+' — Code '+(x.p.articleCode||'')+' — Qté '+x.qty+' — '+money(euro(x.p.price)*x.qty)).join('\n');const mode=delivery==='pickup'?'À venir chercher — '+selectedMarket:'Envoi à domicile';const giftFor=$('#giftFor')?.value.trim()||'',giftMessage=$('#giftMessage')?.value.trim()||'',hidePrice=$('#hidePriceGift')?.checked===true;const giftBlock=giftOrder?'\n\n🎁 CADEAU : OUI'+(giftFor?'\nPour : '+giftFor:'')+(giftMessage?'\nMessage : '+giftMessage:'')+(hidePrice?'\nNe pas mettre le prix dans le colis':''):'\n\nCadeau : Non';const body='Commande Marlène et moi\n\nClient : '+first+' '+last+'\nE-mail : '+email+'\nTéléphone : '+phone+'\n'+mode+'\n\n'+lines+'\n\nTotal : '+money(t.total)+giftBlock;location.href='mailto:appli.suzon@gmail.com?subject='+encodeURIComponent('Commande Marlène et moi — '+first+' '+last)+'&body='+encodeURIComponent(body);hide('orderModal');toast('Commande préparée')};
+$('#sendOrder').onclick=async()=>{
+  const first=$('#buyerFirst').value.trim(),last=$('#buyerLast').value.trim(),email=$('#buyerEmail').value.trim(),phone=$('#buyerPhone').value.trim();
+  const address=$('#buyerAddress')?.value.trim()||'',postal=$('#buyerPostal')?.value.trim()||'',city=$('#buyerCity')?.value.trim()||'';
+  if(!first||!last||!email||!phone)return toast('Remplis nom, prénom, e-mail et téléphone');
+  if(delivery==='ship'&&(!address||!postal||!city))return toast('Remplis l’adresse de livraison');
+  const t=totals();
+  const items=cartItems().map(x=>({name:x.p.name,shade:x.p.colorShade||'',qty:x.qty,price:x.p.price,lineTotal:money(euro(x.p.price)*x.qty),image:(x.p.imgs&&x.p.imgs[0])||''}));
+  const mode=delivery==='pickup'?'À venir chercher — '+selectedMarket:'Envoi à domicile';
+  const gift={enabled:giftOrder,forName:$('#giftFor')?.value.trim()||'',message:$('#giftMessage')?.value.trim()||'',hidePrice:$('#hidePriceGift')?.checked===true};
+  try{
+    const d=await api('/api/order',{method:'POST',body:JSON.stringify({first,last,email,phone,address,postal,city,deliveryText:mode,totalText:money(t.total),items,gift})});
+    safeSet(CUSTOMER_TRACKING,JSON.stringify({id:d.id,key:d.key,orderNumber:d.orderNumber}));
+    updateTrackingButton();
+    cart=[];saveCart();renderCart();hide('orderModal');$('#cartScreen').classList.remove('on');
+    toast('Commande '+d.orderNumber+' enregistrée');
+    setTimeout(openTracking,500);
+  }catch(e){toast('Impossible d’enregistrer : '+e.message)}
+};
 $('#adminBtn').onclick=openAdmin;
 $$('.admin-pill').forEach(b=>b.onclick=()=>{selectedAdmin=b.dataset.admin;$$('.admin-pill').forEach(x=>x.classList.toggle('active',x===b))});
 $('#saveAdminCodes').onclick=async()=>{const j=$('#johnCode').value.trim(),m=$('#marleneCode').value.trim();if(j.length<4||m.length<4||j===m)return toast('Codes différents de 4 caractères minimum');admins={John:j,'Marlène':m};safeSet(ADMINS,JSON.stringify(admins));try{const d=await api('/api/admin/setup',{method:'POST',body:JSON.stringify({johnCode:j,marleneCode:m})});admin=true;adminName=d.admin;adminToken=d.token;safeSet(ADMIN_TOKEN,adminToken);safeSet(ADMIN_SESSION,'1');safeSet(ADMIN_NAME,adminName)}catch{}hide('adminModal');render();toast('Codes enregistrés')};
 $('#loginAdmin').onclick=async()=>{const code=$('#adminCode').value;if(!admins||admins[selectedAdmin]!==code)return toast('Code incorrect');try{const d=await api('/api/admin/login',{method:'POST',body:JSON.stringify({admin:selectedAdmin,code})});adminToken=d.token;safeSet(ADMIN_TOKEN,adminToken)}catch(e){return toast(e.message)}admin=true;adminName=selectedAdmin;safeSet(ADMIN_SESSION,'1');safeSet(ADMIN_NAME,adminName);hide('adminModal');render();toast('Mode administrateur')};
 $('#logoutAdmin').onclick=()=>{admin=false;adminName='';adminToken='';safeSet(ADMIN_SESSION,'0');safeSet(ADMIN_NAME,'');safeSet(ADMIN_TOKEN,'');hide('adminModal');render()};
 $('#changeCodeOpen').onclick=()=>{hide('adminModal');show('changeCodeModal')};
-$('#saveNewCode').onclick=()=>{const c=$('#currentCode').value,n=$('#newCode').value,f=$('#confirmCode').value,msg=$('#changeCodeMessage');if(!admins||admins[adminName]!==c){msg.textContent='Code actuel incorrect';return}if(n.length<4){msg.textContent='4 caractères minimum';return}if(n!==f){msg.textContent='Les deux nouveaux codes ne correspondent pas';return}admins[adminName]=n;safeSet(ADMINS,JSON.stringify(admins));msg.textContent='Code changé';setTimeout(()=>hide('changeCodeModal'),700)};
+$('#saveNewCode').onclick=async()=>{const c=$('#currentCode').value,n=$('#newCode').value,f=$('#confirmCode').value,msg=$('#changeCodeMessage');if(!admins||admins[adminName]!==c){msg.textContent='Code actuel incorrect';return}if(n.length<4){msg.textContent='4 caractères minimum';return}if(n!==f){msg.textContent='Les deux nouveaux codes ne correspondent pas';return}try{await api('/api/admin/change-code',{method:'POST',body:JSON.stringify({currentCode:c,newCode:n})})}catch(e){msg.textContent=e.message;return}admins[adminName]=n;safeSet(ADMINS,JSON.stringify(admins));msg.textContent='Code changé';setTimeout(()=>hide('changeCodeModal'),700)};
 $('#addProductBtn').onclick=()=>openProductModal();
 $('#saveProduct').onclick=async()=>{const name=$('#productName').value.trim(),info=$('#productInfo').value.trim(),price=$('#productPrice').value.trim();if(!name||!price)return toast('Nom et prix obligatoires');const incoming=await Promise.all([fileData($('#photo1')),fileData($('#photo2')),fileData($('#photo3'))]);const colorFamily=$('#productColorFamily')?.value||'multicolore',colorShade=$('#productColorShade')?.value||colorFamilyById(colorFamily).label;if(editing){editing.name=name;editing.info=info;editing.price=price;editing.colorFamily=colorFamily;editing.colorShade=colorShade;editing.articleCode=makeArticleCode(current,colorFamily,colorShade,(editing.articleCode||editing.id||Date.now()).slice(-4));editing.imgs=editing.imgs||[];incoming.forEach((v,i)=>{if(v)editing.imgs[i]=v});while(editing.imgs.length<3)editing.imgs.push(editing.imgs[0]||'scarf-1.jpg')}else{const imgs=incoming.filter(Boolean);while(imgs.length<3)imgs.push(imgs[0]||'scarf-1.jpg');const newId='p'+Date.now();const np={id:newId,name,info,price,colorFamily,colorShade,articleCode:makeArticleCode(current,colorFamily,colorShade,newId),imgs:imgs.slice(0,3)};products[current].push(np);safeSet(PENDING_NEW,JSON.stringify({...np,cat:current}))}saveProducts();hide('productModal');render();toast('Article enregistré')};
 
@@ -347,6 +376,6 @@ if(collectionBtn)collectionBtn.onclick=async()=>{
 const newItemSee=$('#newItemSee'),newItemClose=$('#newItemClose');
 if(newItemSee)newItemSee.onclick=()=>{let item=pendingNewItem;if(!item){try{item=JSON.parse(safeGet(PENDING_NEW)||'null')}catch{}}safeSet(PENDING_NEW,'');revealItem(item)};
 if(newItemClose)newItemClose.onclick=()=>{safeSet(PENDING_NEW,'');hideNewItem()};
-ensureColors();ensureArticleCodes();saveProducts();renderCartBadge();render();checkNewCollectionOnce();
+ensureColors();ensureArticleCodes();saveProducts();renderCartBadge();render();updateTrackingButton();checkNewCollectionOnce();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js?v=2').catch(()=>{});
 })();
