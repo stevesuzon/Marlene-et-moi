@@ -179,7 +179,7 @@ function saveCart(){safeSet(CART,JSON.stringify(cart));renderCartBadge()}
 function renderCartBadge(){$('#cartBadge').textContent=cart.reduce((s,x)=>s+x.qty,0)}
 function find(cat,id){return (products[cat]||[]).find(p=>p.id===id)}
 function render(){
- $('#sectionTitle').textContent=labels[current];
+ const activeColor=colorFamilyById(colorFilter);$('#sectionTitle').textContent=colorFilter==='toutes'?labels[current]:(labels[current]+' — '+activeColor.label);
  $$('.category').forEach(b=>b.classList.toggle('active',b.dataset.cat===current));
  const baseList=products[current]||[],list=colorFilter==='toutes'?baseList:baseList.filter(p=>(p.colorFamily||guessColorFamily(p))===colorFilter),pages=Math.max(1,Math.ceil(list.length/10));page=Math.min(page,pages);const slice=list.slice((page-1)*10,page*10);
  $('#productGrid').innerHTML='';
