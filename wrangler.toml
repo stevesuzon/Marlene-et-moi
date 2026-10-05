@@ -2,7 +2,7 @@ name = "marlene-et-moi"
 compatibility_date = "2026-10-04"
 
 [build]
-command = "rm -rf site && mkdir -p site && unzip -o Marlene-et-moi-GitHub-Cloudflare.zip -d site"
+command = "rm -rf site && mkdir -p site && unzip -o Marlene-et-moi-GitHub-Cloudflare.zip -d site && cp v21-effects.js site/public/v21-effects.js && node -e \"const fs=require('fs');const p='site/public/index.html';let s=fs.readFileSync(p,'utf8');if(!s.includes('v21-effects.js'))s=s.replace('</body>','<script src=\\\"v21-effects.js\\\"></script></body>');fs.writeFileSync(p,s);const sw='site/public/sw.js';if(fs.existsSync(sw)){let t=fs.readFileSync(sw,'utf8').replace(/marlene-et-moi-v\\d+/g,'marlene-et-moi-v21');fs.writeFileSync(sw,t)}\""
 
 [assets]
 directory = "./site/public"
