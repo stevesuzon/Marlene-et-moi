@@ -32,7 +32,10 @@
     <div class="color-filters-title">Couleur</div>
     <div class="color-filters" id="colorFilters"></div>
   </div>
-  <div class="cart-below-categories"><button class="cart-main" id="cartBtn" aria-label="Panier">🛒 <span>Panier</span><b id="cartBadge">0</b></button></div>
+  <div class="cart-below-categories">
+      <button class="tracking-main hidden" id="trackingBtn">📦 Suivi de ma commande</button>
+      <button class="cart-main" id="cartBtn" aria-label="Panier">🛒 <span>Panier</span><b id="cartBadge">0</b></button>
+    </div>
 
   <main class="content">
     <div class="section-head">
@@ -93,7 +96,22 @@
   </div>
 </div>
 
-<div class="modal" id="adminModal" aria-hidden="true">
+<div class="screen" id="trackingScreen" aria-hidden="true">
+      <div class="screen-head"><button id="trackingBack">←</button><h2>Suivi de ma commande</h2></div>
+      <div class="tracking-card" id="trackingContent"></div>
+    </div>
+
+    <div class="screen" id="adminOrdersScreen" aria-hidden="true">
+      <div class="screen-head"><button id="adminOrdersBack">←</button><h2>Commandes</h2></div>
+      <div class="admin-order-tabs">
+        <button class="active" data-order-tab="active">À préparer</button>
+        <button data-order-tab="ready">À envoyer</button>
+        <button data-order-tab="sent">Envoyées</button>
+      </div>
+      <div class="admin-orders-list" id="adminOrdersList"></div>
+    </div>
+
+    <div class="modal" id="adminModal" aria-hidden="true">
   <div class="modal-card">
     <button class="modal-back" data-close="adminModal">←</button>
     <h2 id="adminTitle">Administration</h2>
@@ -109,7 +127,7 @@
     </div>
     <div id="adminSettings" class="stack hidden">
       <p>Connecté : <b id="adminWho"></b></p>
-      <button class="secondary" id="changeCodeOpen">Changer mon code</button>
+      <button class="primary" id="adminOrdersBtn">📦 Commandes</button><button class="secondary" id="changeCodeOpen">Changer mon code</button>
       <button class="danger" id="logoutAdmin">Déconnexion</button>
     </div>
   </div>
