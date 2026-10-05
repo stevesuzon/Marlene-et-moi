@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#405f50">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Marlène et moi">
+  <title>Marlène et moi</title>
+  <link rel="stylesheet" href="styles.css?v=2">
+</head>
+<body>
+<div class="app" id="app">
+  <header class="hero" id="heroArea">
+    <img src="banner-marlene-et-moi.png" alt="Marlène et moi">
+    <div class="top-left">
+      <button class="icon-btn" id="adminBtn" aria-label="Administration">🔒</button>
+      <button class="icon-btn hidden" id="backBtn" aria-label="Retour">←</button>
+    </div>
+    <button class="collection-update" id="collectionUpdateBtn">↻ Mise à jour nouvelle collection</button>
+    <button class="cart-main" id="cartBtn" aria-label="Panier">🛒 <span>Panier</span><b id="cartBadge">0</b></button>
+  </header>
+
+  <nav class="categories" aria-label="Catégories">
+    <button class="category active" data-cat="echarpes">🧣 Écharpes</button>
+    <button class="category" data-cat="vestes">🧥 Vestes</button>
+    <button class="category" data-cat="bracelets">💎 Bracelets</button>
+  </nav>
+
+  <main class="content">
+    <div class="section-head">
+      <h1 id="sectionTitle">Écharpes</h1>
+      <button class="admin-add hidden" id="addProductBtn">+ Ajouter</button>
+    </div>
+    <div class="grid" id="productGrid"></div>
+    <div class="pager" id="pager">
+      <button id="prevPage">←</button><span id="pageLabel">Page 1 / 1</span><button id="nextPage">→</button>
+    </div>
+  </main>
+</div>
+
+<div class="fullscreen" id="viewer" aria-hidden="true">
+  <button class="viewer-back" id="viewerBack">←</button>
+  <img id="viewerImage" alt="Article">
+  <div class="viewer-nav"><button id="viewerPrev">‹</button><span id="viewerDots"></span><button id="viewerNext">›</button></div>
+  <div class="viewer-caption"><strong id="viewerName"></strong><span id="viewerInfo"></span></div>
+</div>
+
+<div class="screen" id="cartScreen" aria-hidden="true">
+  <div class="screen-head"><button id="cartBack">←</button><h2>Mon panier</h2></div>
+  <div id="cartList" class="cart-list"></div>
+  <div class="cart-summary">
+    <div><span>Sous-total</span><b id="cartSubtotal">0 €</b></div>
+    <div><span>Livraison</span><b id="shippingFee">10 €</b></div>
+    <div class="total"><span>Total</span><b id="cartTotal">0 €</b></div>
+    <div class="delivery-choice"><button id="shipBtn" class="active">Envoyer</button><button id="pickupBtn">À venir chercher</button></div>
+    <div class="pickup-box hidden" id="pickupBox"><input id="marketSearch" placeholder="Marché ou ville"><div id="marketResults"></div><div id="selectedMarket"></div></div>
+    <button class="primary" id="orderBtn">Commander</button>
+  </div>
+</div>
+
+<div class="modal" id="orderModal" aria-hidden="true">
+  <div class="modal-card">
+    <button class="modal-back" data-close="orderModal">←</button>
+    <h2>Ma commande</h2>
+    <div id="orderPreview" class="order-preview"></div>
+    <div class="form-grid">
+      <input id="buyerFirst" autocomplete="given-name" placeholder="Prénom">
+      <input id="buyerLast" autocomplete="family-name" placeholder="Nom">
+      <input id="buyerEmail" type="email" inputmode="email" autocomplete="email" placeholder="E-mail">
+      <input id="buyerPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="Téléphone">
+    </div>
+    <button class="primary" id="sendOrder">Envoyer la commande</button>
+  </div>
+</div>
+
+<div class="modal" id="adminModal" aria-hidden="true">
+  <div class="modal-card">
+    <button class="modal-back" data-close="adminModal">←</button>
+    <h2 id="adminTitle">Administration</h2>
+    <div id="adminSetup" class="stack hidden">
+      <label>John — mets ton code</label><input id="johnCode" type="password" placeholder="Code John">
+      <label>Marlène — mets ton code</label><input id="marleneCode" type="password" placeholder="Code Marlène">
+      <button class="primary" id="saveAdminCodes">Enregistrer</button>
+    </div>
+    <div id="adminLogin" class="stack hidden">
+      <div class="admin-pills"><button class="admin-pill active" data-admin="John">John</button><button class="admin-pill" data-admin="Marlène">Marlène</button></div>
+      <input id="adminCode" type="password" placeholder="Code administrateur">
+      <button class="primary" id="loginAdmin">Connexion</button>
+    </div>
+    <div id="adminSettings" class="stack hidden">
+      <p>Connecté : <b id="adminWho"></b></p>
+      <button class="secondary" id="changeCodeOpen">Changer mon code</button>
+      <button class="danger" id="logoutAdmin">Déconnexion</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="changeCodeModal" aria-hidden="true">
+  <div class="modal-card">
+    <button class="modal-back" data-close="changeCodeModal">←</button>
+    <h2>Changer mon code</h2>
+    <div class="stack">
+      <input id="currentCode" type="password" placeholder="Code actuel">
+      <input id="newCode" type="password" placeholder="Nouveau code — lettres/chiffres">
+      <input id="confirmCode" type="password" placeholder="Confirmer le nouveau code">
+      <button class="primary" id="saveNewCode">Changer mon code</button>
+      <small id="changeCodeMessage"></small>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="productModal" aria-hidden="true">
+  <div class="modal-card">
+    <button class="modal-back" data-close="productModal">←</button>
+    <h2 id="productModalTitle">Ajouter un article</h2>
+    <div class="stack">
+      <input id="productName" placeholder="Nom">
+      <input id="productInfo" placeholder="Description">
+      <input id="productPrice" placeholder="Prix ex : 39 €">
+      <div class="photo-inputs">
+        <label>Photo 1<input id="photo1" type="file" accept="image/*"></label>
+        <label>Photo 2<input id="photo2" type="file" accept="image/*"></label>
+        <label>Photo 3<input id="photo3" type="file" accept="image/*"></label>
+      </div>
+      <button class="primary" id="saveProduct">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="yarn-loader" id="yarnLoader" aria-hidden="true">
+  <div class="yarn-loader-card">
+    <div class="yarn-stage">
+      <img class="yarn-ball" src="pelote-multicolore.png" alt="">
+      <svg class="yarn-writing" viewBox="0 0 620 150" aria-hidden="true">
+        <defs>
+          <linearGradient id="loaderYarnGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#d6b3a4"/>
+            <stop offset="22%" stop-color="#dbc8a5"/>
+            <stop offset="48%" stop-color="#9fb9d4"/>
+            <stop offset="74%" stop-color="#d8aeb4"/>
+            <stop offset="100%" stop-color="#adaaa7"/>
+          </linearGradient>
+        </defs>
+        <path class="yarn-lead" d="M 6 86 C 28 84, 50 78, 82 80"/>
+        <text class="yarn-word" x="76" y="98">Marlène et moi</text>
+      </svg>
+    </div>
+    <div class="yarn-loader-note" id="yarnLoaderNote">Chargement…</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="app.js?v=2"></script>
+</body>
+</html>
