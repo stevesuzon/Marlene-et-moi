@@ -252,3 +252,8 @@ button,input{font:inherit}.hero{position:relative;background:#e9eeeb}.hero>img{d
 .order-action:disabled{opacity:.55}
 .order-customer{font-size:13px;color:var(--muted);margin:8px 0}
 @media(max-width:620px){.tracking-main{font-size:13px;padding:9px 10px}.cart-below-categories{justify-content:space-between}}
+
+/* CLEAN v7 — commande complète */
+#buyerAddress{grid-column:1/-1}
+#buyerPostal,#buyerCity{min-width:0}
+.order-customer{line-height:1.45}
