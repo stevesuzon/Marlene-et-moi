@@ -61,3 +61,59 @@ button,input{font:inherit}.hero{position:relative;background:#e9eeeb}.hero>img{d
   .cart-main{right:10px!important;bottom:10px!important;min-width:126px;min-height:56px;font-size:19px!important}
   .cart-main span{font-size:16px!important}
 }
+
+/* CLEAN v3.1 — bannière complète + bouton collection discret */
+.hero{
+  min-height:0!important;
+  overflow:visible!important;
+}
+.hero>img{
+  width:100%!important;
+  height:auto!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+  display:block!important;
+}
+.collection-update{
+  position:absolute!important;
+  top:12px!important;
+  right:12px!important;
+  left:auto!important;
+  transform:none!important;
+  width:auto!important;
+  max-width:210px!important;
+  min-height:42px!important;
+  padding:9px 14px!important;
+  border-radius:999px!important;
+  font-size:13px!important;
+  line-height:1.08!important;
+  white-space:normal!important;
+  background:rgba(255,253,248,.94)!important;
+  box-shadow:0 3px 10px rgba(0,0,0,.15)!important;
+}
+.cart-main{
+  left:auto!important;
+  right:12px!important;
+  top:68px!important;
+  bottom:auto!important;
+  min-width:128px!important;
+  min-height:52px!important;
+  padding:11px 14px!important;
+  font-size:18px!important;
+  border-radius:15px!important;
+}
+@media(max-width:620px){
+  .hero{min-height:0!important}
+  .hero>img{height:auto!important;object-fit:contain!important;object-position:center center!important}
+  .collection-update{
+    top:10px!important;right:10px!important;
+    width:auto!important;max-width:178px!important;
+    min-height:40px!important;padding:8px 12px!important;
+    font-size:12px!important;
+  }
+  .cart-main{
+    top:60px!important;right:10px!important;bottom:auto!important;
+    min-width:118px!important;min-height:50px!important;
+    font-size:17px!important;
+  }
+}
