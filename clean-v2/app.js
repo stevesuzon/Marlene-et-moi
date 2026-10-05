@@ -68,6 +68,71 @@ let current='echarpes',page=1,viewerItem=null,viewerIndex=0,delivery='ship',sele
 let admins;try{admins=JSON.parse(safeGet(ADMINS)||'null')}catch{admins=null}
 let admin=safeGet(ADMIN_SESSION)==='1',adminName=safeGet(ADMIN_NAME)||'';
 const labels={echarpes:'Écharpes',vestes:'Vestes',bracelets:'Bracelets'};
+
+const COLOR_FAMILIES=[
+ {id:'toutes',label:'Toutes',hex:'linear-gradient(135deg,#2e8b57 0 20%,#ef4444 20% 40%,#3b82f6 40% 60%,#f4d03f 60% 80%,#111 80%)'},
+ {id:'vert',label:'Vert',hex:'#3f7f59',shades:['Vert','Vert clair','Vert foncé','Vert pomme','Vert olive','Vert sapin','Vert menthe','Kaki']},
+ {id:'bleu',label:'Bleu',hex:'#3d6fa8',shades:['Bleu','Bleu clair','Bleu foncé','Bleu marine','Bleu ciel','Bleu glacier','Bleu roi','Turquoise']},
+ {id:'rouge',label:'Rouge',hex:'#b54b4b',shades:['Rouge','Rouge clair','Rouge foncé','Bordeaux','Grenat','Framboise']},
+ {id:'rose',label:'Rose',hex:'#d78fa4',shades:['Rose','Rose clair','Rose poudré','Vieux rose','Fuchsia','Saumon']},
+ {id:'violet',label:'Violet',hex:'#80569c',shades:['Violet','Violet clair','Violet foncé','Prune','Lilas','Lavande']},
+ {id:'jaune',label:'Jaune',hex:'#e2bd3c',shades:['Jaune','Jaune clair','Moutarde','Or','Citron']},
+ {id:'orange',label:'Orange',hex:'#d77d35',shades:['Orange','Orange clair','Orange foncé','Terracotta','Cuivre']},
+ {id:'beige',label:'Beige',hex:'#d2bea0',shades:['Beige','Écru','Crème','Sable','Camel','Taupe']},
+ {id:'marron',label:'Marron',hex:'#76513c',shades:['Marron','Marron clair','Marron foncé','Chocolat','Noisette','Caramel']},
+ {id:'gris',label:'Gris',hex:'#8e9294',shades:['Gris','Gris clair','Gris foncé','Anthracite','Argent']},
+ {id:'noir',label:'Noir',hex:'#202020',shades:['Noir','Noir profond']},
+ {id:'blanc',label:'Blanc',hex:'#f5f3ec',shades:['Blanc','Blanc cassé','Ivoire']},
+ {id:'multicolore',label:'Multicolore',hex:'linear-gradient(135deg,#e76f51,#f4d35e,#2a9d8f,#457b9d,#9b5de5)',shades:['Multicolore']}
+];
+let colorFilter='toutes';
+function colorFamilyById(id){return COLOR_FAMILIES.find(c=>c.id===id)||COLOR_FAMILIES[0]}
+function guessColorFamily(p){
+  const s=((p&&p.name)||'')+' '+((p&&p.info)||'');
+  const t=s.toLowerCase();
+  if(/vert|kaki|olive|menthe/.test(t))return 'vert';
+  if(/bleu|marine|turquoise|glacier/.test(t))return 'bleu';
+  if(/rouge|bordeaux|grenat/.test(t))return 'rouge';
+  if(/rose|fuchsia|saumon/.test(t))return 'rose';
+  if(/violet|prune|lilas|lavande/.test(t))return 'violet';
+  if(/jaune|moutarde|or/.test(t))return 'jaune';
+  if(/orange|terracotta|cuivre/.test(t))return 'orange';
+  if(/beige|écru|ecru|crème|creme|sable|camel|taupe/.test(t))return 'beige';
+  if(/marron|chocolat|noisette|caramel/.test(t))return 'marron';
+  if(/gris|anthracite|argent/.test(t))return 'gris';
+  if(/noir/.test(t))return 'noir';
+  if(/blanc|ivoire/.test(t))return 'blanc';
+  return p&&p.colorFamily ? p.colorFamily : 'multicolore';
+}
+function ensureColors(){
+  Object.values(products).forEach(list=>(list||[]).forEach(p=>{
+    if(!p.colorFamily)p.colorFamily=guessColorFamily(p);
+    if(!p.colorShade)p.colorShade=colorFamilyById(p.colorFamily).shades?.[0]||colorFamilyById(p.colorFamily).label;
+  }));
+}
+function renderColorFilters(){
+  const box=$('#colorFilters'); if(!box)return;
+  box.innerHTML='';
+  COLOR_FAMILIES.forEach(c=>{
+    const b=document.createElement('button');b.className='color-chip'+(colorFilter===c.id?' active':'');
+    b.innerHTML='<span class="color-dot" style="background:'+c.hex+'"></span><span>'+c.label+'</span>';
+    b.onclick=()=>{colorFilter=c.id;page=1;render()};
+    box.appendChild(b);
+  });
+}
+function fillColorAdmin(familyId,shade){
+  const fam=$('#productColorFamily'), sh=$('#productColorShade'); if(!fam||!sh)return;
+  fam.innerHTML=COLOR_FAMILIES.filter(c=>c.id!=='toutes').map(c=>'<option value="'+c.id+'">'+c.label+'</option>').join('');
+  fam.value=familyId||'multicolore';
+  const refresh=()=>{
+    const c=colorFamilyById(fam.value);
+    sh.innerHTML=(c.shades||[c.label]).map(x=>'<option value="'+x.replace(/"/g,'&quot;')+'">'+x+'</option>').join('');
+    if(shade && [...sh.options].some(o=>o.value===shade))sh.value=shade;
+  };
+  fam.onchange=()=>{shade='';refresh()};
+  refresh();
+}
+
 let pendingNewItem=null;
 function allProductsFlat(){return Object.entries(products).flatMap(([cat,list])=>(list||[]).map(p=>({...p,cat})))}
 function productIds(){return allProductsFlat().map(p=>p.id)}
@@ -116,11 +181,11 @@ function find(cat,id){return (products[cat]||[]).find(p=>p.id===id)}
 function render(){
  $('#sectionTitle').textContent=labels[current];
  $$('.category').forEach(b=>b.classList.toggle('active',b.dataset.cat===current));
- const list=products[current]||[],pages=Math.max(1,Math.ceil(list.length/10));page=Math.min(page,pages);const slice=list.slice((page-1)*10,page*10);
+ const baseList=products[current]||[],list=colorFilter==='toutes'?baseList:baseList.filter(p=>(p.colorFamily||guessColorFamily(p))===colorFilter),pages=Math.max(1,Math.ceil(list.length/10));page=Math.min(page,pages);const slice=list.slice((page-1)*10,page*10);
  $('#productGrid').innerHTML='';
  slice.forEach(p=>{
   const card=document.createElement('article');card.className='card';card.dataset.id=p.id;
-  card.innerHTML='<div class="photo"><img src="'+p.imgs[0]+'" alt="'+p.name.replace(/"/g,'&quot;')+'"><div class="dots"><i></i><i></i><i></i></div></div><div class="meta"><div class="name">'+p.name+'</div><div class="info">'+p.info+'</div><div class="buy-row"><div class="price">'+p.price+'</div><input class="qty" type="number" min="1" max="99" value="1" aria-label="Quantité"><button class="mini-cart" aria-label="Ajouter au panier">🛒</button></div><div class="admin-tools '+(admin?'':'hidden')+'"><button class="edit">Modifier</button><button class="delete">Supprimer</button></div></div>';
+  const cf=colorFamilyById(p.colorFamily||guessColorFamily(p));card.innerHTML='<div class="photo"><img src="'+p.imgs[0]+'" alt="'+p.name.replace(/"/g,'&quot;')+'"><div class="dots"><i></i><i></i><i></i></div></div><div class="meta"><div class="name">'+p.name+'</div><div class="info">'+p.info+'</div><div class="product-color-line"><span class="color-dot" style="background:'+cf.hex+'"></span><span>'+(p.colorShade||cf.label)+'</span></div><div class="buy-row"><div class="price">'+p.price+'</div><input class="qty" type="number" min="1" max="99" value="1" aria-label="Quantité"><button class="mini-cart" aria-label="Ajouter au panier">🛒</button></div><div class="admin-tools '+(admin?'':'hidden')+'"><button class="edit">Modifier</button><button class="delete">Supprimer</button></div></div>';
   card.querySelector('.photo').onclick=()=>openViewer(p);
   card.querySelector('.mini-cart').onclick=e=>{const q=Math.max(1,parseInt(card.querySelector('.qty').value)||1);addToCart(current,p.id,q);animateToCart(e.currentTarget,p)};
   card.querySelector('.edit').onclick=()=>openProductModal(p);
@@ -128,7 +193,7 @@ function render(){
   $('#productGrid').appendChild(card);
  });
  $('#pageLabel').textContent='Page '+page+' / '+pages;$('#prevPage').disabled=page<=1;$('#nextPage').disabled=page>=pages;
- $('#addProductBtn').classList.toggle('hidden',!admin);updateAdminButton();
+ $('#addProductBtn').classList.toggle('hidden',!admin);updateAdminButton();renderColorFilters();
 }
 function addToCart(cat,id,qty){const i=cart.findIndex(x=>x.cat===cat&&x.id===id);if(i>=0)cart[i].qty+=qty;else cart.push({cat,id,qty});saveCart();toast('Ajouté au panier')}
 function cartItems(){return cart.map(c=>({...c,p:find(c.cat,c.id)})).filter(x=>x.p)}
@@ -141,10 +206,10 @@ function hide(id){$('#'+id).classList.remove('on');$('#'+id).setAttribute('aria-
 function updateAdminButton(){$('#adminBtn').textContent=admin?'⚙️':'🔒'}
 function openAdmin(){if(!admins||!admins.John||!admins['Marlène']){$('#adminSetup').classList.remove('hidden');$('#adminLogin').classList.add('hidden');$('#adminSettings').classList.add('hidden');$('#adminTitle').textContent='Créer les deux accès'}else if(admin){$('#adminSetup').classList.add('hidden');$('#adminLogin').classList.add('hidden');$('#adminSettings').classList.remove('hidden');$('#adminWho').textContent=adminName}else{$('#adminSetup').classList.add('hidden');$('#adminLogin').classList.remove('hidden');$('#adminSettings').classList.add('hidden');$('#adminTitle').textContent='Connexion administrateur'}show('adminModal')}
 function fileData(input){return new Promise(resolve=>{const f=input.files&&input.files[0];if(!f)return resolve('');const r=new FileReader();r.onload=()=>resolve(String(r.result||''));r.onerror=()=>resolve('');r.readAsDataURL(f)})}
-function openProductModal(p=null){editing=p;$('#productModalTitle').textContent=p?'Modifier l’article':'Ajouter un article';$('#productName').value=p?.name||'';$('#productInfo').value=p?.info||'';$('#productPrice').value=p?.price||'';['photo1','photo2','photo3'].forEach(id=>$('#'+id).value='');show('productModal')}
+function openProductModal(p=null){editing=p;$('#productModalTitle').textContent=p?'Modifier l’article':'Ajouter un article';$('#productName').value=p?.name||'';$('#productInfo').value=p?.info||'';$('#productPrice').value=p?.price||'';fillColorAdmin(p?.colorFamily||guessColorFamily(p||{}),p?.colorShade||'');['photo1','photo2','photo3'].forEach(id=>$('#'+id).value='');show('productModal')}
 function animateToCart(btn,p){try{const target=$('#cartBtn'),a=btn.getBoundingClientRect(),b=target.getBoundingClientRect(),sx=a.left+a.width/2,sy=a.top+a.height/2,ex=b.left+b.width/2,ey=b.top+b.height/2,dir=ex>=sx?1:-1,bend=Math.max(90,Math.min(190,Math.abs(ex-sx)*.45)),c1x=sx+dir*bend,c1y=sy-90,c2x=ex-dir*bend*.55,c2y=ey+62,d='M '+sx+' '+sy+' C '+c1x+' '+c1y+', '+c2x+' '+c2y+', '+ex+' '+ey,ns='http://www.w3.org/2000/svg';const svg=document.createElementNS(ns,'svg');svg.classList.add('yarn-svg');svg.setAttribute('width',innerWidth);svg.setAttribute('height',innerHeight);svg.setAttribute('viewBox','0 0 '+innerWidth+' '+innerHeight);svg.innerHTML='<defs><linearGradient id="yarnGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#d7b6a6"/><stop offset="25%" stop-color="#d8c5a3"/><stop offset="50%" stop-color="#a8bfd8"/><stop offset="75%" stop-color="#d7afb3"/><stop offset="100%" stop-color="#b4b0ad"/></linearGradient></defs><path class="shadow" d="'+d+'"/><path class="main" d="'+d+'"/><path class="shine" d="'+d+'"/>';document.body.appendChild(svg);const path=svg.querySelector('.main'),els=[path,svg.querySelector('.shadow'),svg.querySelector('.shine')],len=path.getTotalLength();els.forEach(el=>{el.style.strokeDasharray=len;el.style.strokeDashoffset=len});const fly=document.createElement('img');fly.className='fly-photo';fly.src=p.imgs[0];fly.style.left=sx+'px';fly.style.top=sy+'px';document.body.appendChild(fly);const start=performance.now(),dur=1500;function f(now){const t=Math.min(1,(now-start)/dur),e=1-Math.pow(1-t,3),off=len*(1-e);els.forEach(el=>el.style.strokeDashoffset=off);const pt=path.getPointAtLength(len*e);fly.style.left=pt.x+'px';fly.style.top=pt.y+'px';fly.style.transform='translate(-50%,-50%) rotate('+(e*18-6)+'deg) scale('+(1-e*.48)+')';if(t<1)requestAnimationFrame(f);else{target.classList.remove('pop');void target.offsetWidth;target.classList.add('pop');setTimeout(()=>{svg.style.transition='opacity .35s';svg.style.opacity='0';fly.style.transition='opacity .3s,transform .3s';fly.style.opacity='0';fly.style.transform='translate(-50%,-50%) scale(.08)'},160);setTimeout(()=>{svg.remove();fly.remove();target.classList.remove('pop')},700)}}requestAnimationFrame(f)}catch{}}
 
-$$('.category').forEach(b=>b.onclick=()=>withYarnLoader('Ouverture de la collection…',()=>{current=b.dataset.cat;page=1;render()}));$('#prevPage').onclick=()=>withYarnLoader('Page précédente…',()=>{page--;render();scrollTo({top:0,behavior:'smooth'})});$('#nextPage').onclick=()=>withYarnLoader('Page suivante…',()=>{page++;render();scrollTo({top:0,behavior:'smooth'})});
+$('.category').forEach(b=>b.onclick=()=>withYarnLoader('Ouverture de la collection…',()=>{current=b.dataset.cat;colorFilter='toutes';page=1;render()}));$('#prevPage').onclick=()=>withYarnLoader('Page précédente…',()=>{page--;render();scrollTo({top:0,behavior:'smooth'})});$('#nextPage').onclick=()=>withYarnLoader('Page suivante…',()=>{page++;render();scrollTo({top:0,behavior:'smooth'})});
 $('#viewerBack').onclick=()=>hide('viewer');$('#viewerPrev').onclick=()=>{viewerIndex=(viewerIndex-1+viewerItem.imgs.length)%viewerItem.imgs.length;renderViewer()};$('#viewerNext').onclick=()=>{viewerIndex=(viewerIndex+1)%viewerItem.imgs.length;renderViewer()};
 $('#cartBtn').onclick=()=>{renderCart();$('#cartScreen').classList.add('on')};$('#cartBack').onclick=()=>$('#cartScreen').classList.remove('on');
 $('#shipBtn').onclick=()=>{delivery='ship';$('#shipBtn').classList.add('active');$('#pickupBtn').classList.remove('active');$('#pickupBox').classList.add('hidden');renderCart()};$('#pickupBtn').onclick=()=>{delivery='pickup';$('#pickupBtn').classList.add('active');$('#shipBtn').classList.remove('active');$('#pickupBox').classList.remove('hidden');renderCart()};
@@ -160,7 +225,7 @@ $('#logoutAdmin').onclick=()=>{admin=false;adminName='';safeSet(ADMIN_SESSION,'0
 $('#changeCodeOpen').onclick=()=>{hide('adminModal');show('changeCodeModal')};
 $('#saveNewCode').onclick=()=>{const c=$('#currentCode').value,n=$('#newCode').value,f=$('#confirmCode').value,msg=$('#changeCodeMessage');if(!admins||admins[adminName]!==c){msg.textContent='Code actuel incorrect';return}if(n.length<4){msg.textContent='4 caractères minimum';return}if(n!==f){msg.textContent='Les deux nouveaux codes ne correspondent pas';return}admins[adminName]=n;safeSet(ADMINS,JSON.stringify(admins));msg.textContent='Code changé';setTimeout(()=>hide('changeCodeModal'),700)};
 $('#addProductBtn').onclick=()=>openProductModal();
-$('#saveProduct').onclick=async()=>{const name=$('#productName').value.trim(),info=$('#productInfo').value.trim(),price=$('#productPrice').value.trim();if(!name||!price)return toast('Nom et prix obligatoires');const incoming=await Promise.all([fileData($('#photo1')),fileData($('#photo2')),fileData($('#photo3'))]);if(editing){editing.name=name;editing.info=info;editing.price=price;editing.imgs=editing.imgs||[];incoming.forEach((v,i)=>{if(v)editing.imgs[i]=v});while(editing.imgs.length<3)editing.imgs.push(editing.imgs[0]||'scarf-1.jpg')}else{const imgs=incoming.filter(Boolean);while(imgs.length<3)imgs.push(imgs[0]||'scarf-1.jpg');const np={id:'p'+Date.now(),name,info,price,imgs:imgs.slice(0,3)};products[current].push(np);safeSet(PENDING_NEW,JSON.stringify({...np,cat:current}))}saveProducts();hide('productModal');render();toast('Article enregistré')};
+$('#saveProduct').onclick=async()=>{const name=$('#productName').value.trim(),info=$('#productInfo').value.trim(),price=$('#productPrice').value.trim();if(!name||!price)return toast('Nom et prix obligatoires');const incoming=await Promise.all([fileData($('#photo1')),fileData($('#photo2')),fileData($('#photo3'))]);const colorFamily=$('#productColorFamily')?.value||'multicolore',colorShade=$('#productColorShade')?.value||colorFamilyById(colorFamily).label;if(editing){editing.name=name;editing.info=info;editing.price=price;editing.colorFamily=colorFamily;editing.colorShade=colorShade;editing.imgs=editing.imgs||[];incoming.forEach((v,i)=>{if(v)editing.imgs[i]=v});while(editing.imgs.length<3)editing.imgs.push(editing.imgs[0]||'scarf-1.jpg')}else{const imgs=incoming.filter(Boolean);while(imgs.length<3)imgs.push(imgs[0]||'scarf-1.jpg');const np={id:'p'+Date.now(),name,info,price,colorFamily,colorShade,imgs:imgs.slice(0,3)};products[current].push(np);safeSet(PENDING_NEW,JSON.stringify({...np,cat:current}))}saveProducts();hide('productModal');render();toast('Article enregistré')};
 
 const collectionBtn=$('#collectionUpdateBtn');
 if(collectionBtn)collectionBtn.onclick=async()=>{
@@ -192,6 +257,6 @@ if(collectionBtn)collectionBtn.onclick=async()=>{
 const newItemSee=$('#newItemSee'),newItemClose=$('#newItemClose');
 if(newItemSee)newItemSee.onclick=()=>{let item=pendingNewItem;if(!item){try{item=JSON.parse(safeGet(PENDING_NEW)||'null')}catch{}}safeSet(PENDING_NEW,'');revealItem(item)};
 if(newItemClose)newItemClose.onclick=()=>{safeSet(PENDING_NEW,'');hideNewItem()};
-renderCartBadge();render();checkNewCollectionOnce();
+ensureColors();saveProducts();renderCartBadge();render();checkNewCollectionOnce();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js?v=2').catch(()=>{});
 })();
