@@ -377,5 +377,5 @@ const newItemSee=$('#newItemSee'),newItemClose=$('#newItemClose');
 if(newItemSee)newItemSee.onclick=()=>{let item=pendingNewItem;if(!item){try{item=JSON.parse(safeGet(PENDING_NEW)||'null')}catch{}}safeSet(PENDING_NEW,'');revealItem(item)};
 if(newItemClose)newItemClose.onclick=()=>{safeSet(PENDING_NEW,'');hideNewItem()};
 ensureColors();ensureArticleCodes();saveProducts();renderCartBadge();render();updateTrackingButton();checkNewCollectionOnce();
-if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js?v=2').catch(()=>{});
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js?v=8').catch(()=>{});
 })();
