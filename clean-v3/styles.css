@@ -27,3 +27,12 @@
 .loader-yarn-line:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,#fff9,transparent);transform:translateX(-100%);animation:yarnSweep 1.4s infinite}
 .loader-card span{font-weight:750;color:var(--muted)}
 @keyframes yarnSweep{100%{transform:translateX(100%)}}
+
+/* CLEAN v103 — marché saisi librement + validation OK */
+.market-entry{display:grid!important;grid-template-columns:1fr auto;gap:8px;align-items:center}
+.market-entry input{margin:0!important}
+.market-entry button{border:0;border-radius:9px;background:var(--green);color:#fff;font-weight:900;padding:11px 15px}
+.market-help{display:block;color:var(--muted);line-height:1.35;margin:7px 1px 8px}
+#marketResults{display:grid;gap:2px}
+#marketResults button{border:0;border-bottom:1px solid #eee7df;background:#fff;text-align:left;padding:9px;border-radius:7px}
+#marketSelected{display:block;margin-top:8px;color:var(--green)}
