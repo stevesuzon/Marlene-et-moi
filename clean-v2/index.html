@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Marlène et moi">
   <title>Marlène et moi</title>
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
 <div class="app" id="app">
@@ -21,7 +21,6 @@
       <button class="icon-btn hidden" id="backBtn" aria-label="Retour">←</button>
     </div>
     <button class="collection-update" id="collectionUpdateBtn">Charger la nouvelle collection</button>
-    <button class="cart-main" id="cartBtn" aria-label="Panier">🛒 <span>Panier</span><b id="cartBadge">0</b></button>
   </header>
 
   <nav class="categories" aria-label="Catégories">
@@ -29,6 +28,7 @@
     <button class="category" data-cat="vestes">🧥 Vestes</button>
     <button class="category" data-cat="bracelets">💎 Bracelets</button>
   </nav>
+  <div class="cart-below-categories"><button class="cart-main" id="cartBtn" aria-label="Panier">🛒 <span>Panier</span><b id="cartBadge">0</b></button></div>
 
   <main class="content">
     <div class="section-head">
