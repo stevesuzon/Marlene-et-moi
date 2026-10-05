@@ -2,7 +2,7 @@ name = "marlene-et-moi"
 compatibility_date = "2026-10-04"
 
 [build]
-command = "rm -rf site && mkdir -p site && unzip -o Marlene-et-moi-GitHub-Cloudflare.zip -d site"
+command = "rm -rf site && mkdir -p site && unzip -o Marlene-et-moi-GitHub-Cloudflare.zip -d site && cp panier-test.js site/public/panier-test.js && sed -i 's#</body>#<script src=\"panier-test.js?v=1\"></script></body>#' site/public/index.html"
 
 [assets]
 directory = "./site/public"
