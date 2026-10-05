@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-const STORAGE='marlene-clean-products-v1', CART='marlene-clean-cart-v1', ADMINS='marlene-clean-admins-v1', ADMIN_SESSION='marlene-clean-admin-session-v1', ADMIN_NAME='marlene-clean-admin-name-v1';
+const STORAGE='marlene-clean-products-v1', CART='marlene-clean-cart-v1', ADMINS='marlene-clean-admins-v1', ADMIN_SESSION='marlene-clean-admin-session-v1', ADMIN_NAME='marlene-clean-admin-name-v1', KNOWN_PRODUCTS='marlene-known-products-v3', PENDING_NEW='marlene-pending-new-v3';
 const safeGet=k=>{try{return localStorage.getItem(k)}catch{return null}}, safeSet=(k,v)=>{try{localStorage.setItem(k,v);return true}catch{return false}};
 const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),1500)};
 const euro=v=>{const n=parseFloat(String(v).replace(/[^0-9,.-]/g,'').replace(',','.'));return Number.isFinite(n)?n:0};
@@ -68,6 +68,46 @@ let current='echarpes',page=1,viewerItem=null,viewerIndex=0,delivery='ship',sele
 let admins;try{admins=JSON.parse(safeGet(ADMINS)||'null')}catch{admins=null}
 let admin=safeGet(ADMIN_SESSION)==='1',adminName=safeGet(ADMIN_NAME)||'';
 const labels={echarpes:'Écharpes',vestes:'Vestes',bracelets:'Bracelets'};
+let pendingNewItem=null;
+function allProductsFlat(){return Object.entries(products).flatMap(([cat,list])=>(list||[]).map(p=>({...p,cat})))}
+function productIds(){return allProductsFlat().map(p=>p.id)}
+function showNewItem(item){
+  if(!item)return;
+  pendingNewItem=item;
+  const m=$('#newItemModal');
+  $('#newItemImage').src=(item.imgs&&item.imgs[0])||'';
+  $('#newItemName').textContent=item.name||'Nouvel article';
+  $('#newItemInfo').textContent=item.info||'';
+  m.classList.add('on');m.setAttribute('aria-hidden','false');
+}
+function hideNewItem(){const m=$('#newItemModal');m.classList.remove('on');m.setAttribute('aria-hidden','true')}
+function revealItem(item){
+  if(!item)return;
+  current=item.cat||current;
+  const list=products[current]||[];
+  const idx=Math.max(0,list.findIndex(p=>p.id===item.id));
+  page=Math.floor(idx/10)+1;
+  render();hideNewItem();
+  setTimeout(()=>{
+    const card=document.querySelector('.card[data-id="'+CSS.escape(item.id)+'"]');
+    if(card){card.scrollIntoView({behavior:'smooth',block:'center'});card.classList.add('new-item-highlight');setTimeout(()=>card.classList.remove('new-item-highlight'),1900)}
+  },120);
+}
+function checkNewCollectionOnce(){
+  let known=[];try{known=JSON.parse(safeGet(KNOWN_PRODUCTS)||'[]')||[]}catch{}
+  const flat=allProductsFlat();
+  const fresh=flat.filter(p=>!known.includes(p.id));
+  // Au premier lancement, mémoriser simplement la collection existante.
+  if(!known.length){safeSet(KNOWN_PRODUCTS,JSON.stringify(productIds()));return}
+  safeSet(KNOWN_PRODUCTS,JSON.stringify(productIds()));
+  if(fresh.length){
+    safeSet(PENDING_NEW,JSON.stringify(fresh[0]));
+    showNewItem(fresh[0]);
+  }else{
+    let pending=null;try{pending=JSON.parse(safeGet(PENDING_NEW)||'null')}catch{}
+    if(pending)showNewItem(pending);
+  }
+}
 const markets=['Rennes — Marché des Lices','Rennes — Marché Sainte-Thérèse','Saint-Malo — Marché de Rocabey','Dinard — Marché central','Nantes — Marché de Talensac','La Baule — Marché central','Vannes — Marché des Lices','Lorient — Marché de Merville','Quimper — Marché des Halles','Brest — Marché Saint-Louis','Palaiseau — Marché du Centre','Viry-Châtillon — Marché des Bosserons','Paris — Marché Bastille','Marseille — Marché du Prado'];
 function saveProducts(){safeSet(STORAGE,JSON.stringify(products))}
 function saveCart(){safeSet(CART,JSON.stringify(cart));renderCartBadge()}
@@ -120,13 +160,13 @@ $('#logoutAdmin').onclick=()=>{admin=false;adminName='';safeSet(ADMIN_SESSION,'0
 $('#changeCodeOpen').onclick=()=>{hide('adminModal');show('changeCodeModal')};
 $('#saveNewCode').onclick=()=>{const c=$('#currentCode').value,n=$('#newCode').value,f=$('#confirmCode').value,msg=$('#changeCodeMessage');if(!admins||admins[adminName]!==c){msg.textContent='Code actuel incorrect';return}if(n.length<4){msg.textContent='4 caractères minimum';return}if(n!==f){msg.textContent='Les deux nouveaux codes ne correspondent pas';return}admins[adminName]=n;safeSet(ADMINS,JSON.stringify(admins));msg.textContent='Code changé';setTimeout(()=>hide('changeCodeModal'),700)};
 $('#addProductBtn').onclick=()=>openProductModal();
-$('#saveProduct').onclick=async()=>{const name=$('#productName').value.trim(),info=$('#productInfo').value.trim(),price=$('#productPrice').value.trim();if(!name||!price)return toast('Nom et prix obligatoires');const incoming=await Promise.all([fileData($('#photo1')),fileData($('#photo2')),fileData($('#photo3'))]);if(editing){editing.name=name;editing.info=info;editing.price=price;editing.imgs=editing.imgs||[];incoming.forEach((v,i)=>{if(v)editing.imgs[i]=v});while(editing.imgs.length<3)editing.imgs.push(editing.imgs[0]||'scarf-1.jpg')}else{const imgs=incoming.filter(Boolean);while(imgs.length<3)imgs.push(imgs[0]||'scarf-1.jpg');products[current].push({id:'p'+Date.now(),name,info,price,imgs:imgs.slice(0,3)})}saveProducts();hide('productModal');render();toast('Article enregistré')};
+$('#saveProduct').onclick=async()=>{const name=$('#productName').value.trim(),info=$('#productInfo').value.trim(),price=$('#productPrice').value.trim();if(!name||!price)return toast('Nom et prix obligatoires');const incoming=await Promise.all([fileData($('#photo1')),fileData($('#photo2')),fileData($('#photo3'))]);if(editing){editing.name=name;editing.info=info;editing.price=price;editing.imgs=editing.imgs||[];incoming.forEach((v,i)=>{if(v)editing.imgs[i]=v});while(editing.imgs.length<3)editing.imgs.push(editing.imgs[0]||'scarf-1.jpg')}else{const imgs=incoming.filter(Boolean);while(imgs.length<3)imgs.push(imgs[0]||'scarf-1.jpg');const np={id:'p'+Date.now(),name,info,price,imgs:imgs.slice(0,3)};products[current].push(np);safeSet(PENDING_NEW,JSON.stringify({...np,cat:current}))}saveProducts();hide('productModal');render();toast('Article enregistré')};
 
 const collectionBtn=$('#collectionUpdateBtn');
 if(collectionBtn)collectionBtn.onclick=async()=>{
   if(collectionBtn.disabled)return;
   collectionBtn.disabled=true;
-  collectionBtn.textContent='↻ Mise à jour…';
+  collectionBtn.textContent='Chargement…';
   showYarnLoader('Nouvelle collection…');
   try{
     if('caches' in window){
@@ -137,18 +177,21 @@ if(collectionBtn)collectionBtn.onclick=async()=>{
       const regs=await navigator.serviceWorker.getRegistrations();
       await Promise.all(regs.map(r=>r.update().catch(()=>{})));
     }
-    await new Promise(r=>setTimeout(r,4200));
+    await new Promise(r=>setTimeout(r,1800));
     const u=new URL(location.href);
     u.searchParams.set('collection',Date.now().toString());
     location.replace(u.href);
   }catch(e){
     hideYarnLoader();
     collectionBtn.disabled=false;
-    collectionBtn.textContent='↻ Mise à jour nouvelle collection';
+    collectionBtn.textContent='Charger la nouvelle collection';
     toast('Mise à jour impossible');
   }
 };
 
-renderCartBadge();render();
+const newItemSee=$('#newItemSee'),newItemClose=$('#newItemClose');
+if(newItemSee)newItemSee.onclick=()=>{let item=pendingNewItem;if(!item){try{item=JSON.parse(safeGet(PENDING_NEW)||'null')}catch{}}safeSet(PENDING_NEW,'');revealItem(item)};
+if(newItemClose)newItemClose.onclick=()=>{safeSet(PENDING_NEW,'');hideNewItem()};
+renderCartBadge();render();checkNewCollectionOnce();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js?v=2').catch(()=>{});
 })();
