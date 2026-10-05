@@ -1,5 +1,4 @@
 name = "marlene-et-moi"
-main = "src/index.js"
 compatibility_date = "2026-10-04"
 
 [build]
@@ -7,12 +6,3 @@ command = "rm -rf site && mkdir -p site && unzip -o Marlene-et-moi-GitHub-Cloudf
 
 [assets]
 directory = "./site/public"
-binding = "ASSETS"
-
-[[durable_objects.bindings]]
-name = "SHOP"
-class_name = "ShopState"
-
-[[migrations]]
-tag = "v1"
-new_sqlite_classes = ["ShopState"]
