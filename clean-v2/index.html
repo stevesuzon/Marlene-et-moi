@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Marlène et moi">
   <title>Marlène et moi</title>
-  <link rel="stylesheet" href="styles.css?v=6">
+  <link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
 <div class="app" id="app">
@@ -91,8 +91,11 @@
       <input id="buyerLast" autocomplete="family-name" placeholder="Nom">
       <input id="buyerEmail" type="email" inputmode="email" autocomplete="email" placeholder="E-mail">
       <input id="buyerPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="Téléphone">
+      <input id="buyerAddress" autocomplete="street-address" placeholder="Adresse">
+      <input id="buyerPostal" inputmode="numeric" autocomplete="postal-code" placeholder="Code postal">
+      <input id="buyerCity" autocomplete="address-level2" placeholder="Ville">
     </div>
-    <button class="primary" id="sendOrder">Envoyer la commande</button>
+    <button class="primary" id="sendOrder">Valider la commande</button>
   </div>
 </div>
 
@@ -205,6 +208,6 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<script src="app.js?v=6"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>
