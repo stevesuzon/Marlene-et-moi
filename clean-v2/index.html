@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Marlène et moi">
   <title>Marlène et moi</title>
-  <link rel="stylesheet" href="styles.css?v=7">
+  <link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body>
 <div class="app" id="app">
@@ -65,6 +65,10 @@
     <div class="total"><span>Total</span><b id="cartTotal">0 €</b></div>
     <div class="delivery-choice"><button id="shipBtn" class="active">Envoyer</button><button id="pickupBtn">À venir chercher</button></div>
     <div class="pickup-box hidden" id="pickupBox"><input id="marketSearch" placeholder="Marché ou ville"><div id="marketResults"></div><div id="selectedMarket"></div></div>
+    <button class="apple-pay-btn" id="applePayBtn" type="button" disabled aria-disabled="true">
+      <span class="apple-logo"></span><span>Pay</span>
+      <small>Bientôt disponible</small>
+    </button>
     <button class="primary" id="orderBtn">Commander</button>
   </div>
 </div>
